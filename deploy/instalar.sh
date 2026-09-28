@@ -28,7 +28,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 echo "== 5/5 Actualización automática cada 5 minutos =="
 chmod +x deploy/actualizar.sh
-( crontab -l 2>/dev/null | grep -v actualizar.sh; echo "*/5 * * * * /home/ubuntu/vgrow-platform/deploy/actualizar.sh >> /home/ubuntu/actualizar.log 2>&1" ) | crontab -
+( crontab -l 2>/dev/null | grep -v actualizar.sh || true; echo "*/5 * * * * /home/ubuntu/vgrow-platform/deploy/actualizar.sh >> /home/ubuntu/actualizar.log 2>&1" ) | crontab -
 
 echo ""
 echo "LISTO. Probá en el navegador: http://$(curl -s ifconfig.me)"

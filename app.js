@@ -1,12 +1,13 @@
 // Vgrow Platform · servidor
 // Sirve la plataforma (public/index.html) y expone:
 //   POST /api/ia    → llama a la IA de Anthropic con la clave guardada en el servidor (.env)
-//   POST /api/lead  → guarda empresa + email (hoy en data/leads.jsonl; después en MySQL)
+//   POST /api/lead  → guarda empresa + email + diagnóstico en MySQL (y copia de respaldo en data/leads.jsonl)
 //   GET  /api/salud → para chequear que el servidor responde
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const db = require('./db/db');
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
@@ -32,7 +33,7 @@ function limitador(max, ventanaMs) {
   };
 }
 
-app.get('/api/salud', (req, res) => res.json({ ok: true, ia: Boolean(API_KEY), hora: new Date().toISOString() }));
+app.get('/api/salud', async (req, res) => res.json({ ok: true, ia: Boolean(API_KEY), db: await db.salud(), hora: new Date().toISOString() }));
 
 app.post('/api/ia', limitador(30, 60 * 60 * 1000), async (req, res) => {
   if (!API_KEY) return res.status(503).json({ error: 'La IA no está configurada en el servidor.' });
@@ -59,17 +60,22 @@ app.post('/api/ia', limitador(30, 60 * 60 * 1000), async (req, res) => {
   }
 });
 
-app.post('/api/lead', limitador(60, 60 * 60 * 1000), (req, res) => {
+app.post('/api/lead', limitador(60, 60 * 60 * 1000), async (req, res) => {
   let d = req.body;
   if (typeof d === 'string') { try { d = JSON.parse(d); } catch { d = {}; } }
   const email = String(d.email || '').trim().toLowerCase();
   const empresa = String(d.empresa || '').trim();
   if (!email.includes('@') || empresa.length < 2) return res.status(400).json({ error: 'Faltan datos.' });
   const registro = { ...d, email, empresa, ip: req.ip, recibido: new Date().toISOString() };
-  fs.appendFile(path.join(DATA_DIR, 'leads.jsonl'), JSON.stringify(registro) + '\n', err => {
-    if (err) { console.error('[lead]', err.message); return res.status(500).json({ error: 'No se pudo guardar.' }); }
+  // Copia de respaldo en archivo (siempre)
+  fs.appendFile(path.join(DATA_DIR, 'leads.jsonl'), JSON.stringify(registro) + '\n', err => { if (err) console.error('[lead archivo]', err.message); });
+  try {
+    await db.guardarLead(registro, req.ip);
     res.json({ ok: true });
-  });
+  } catch (e) {
+    console.error('[lead db]', e.message);
+    res.json({ ok: true, respaldo: true });
+  }
 });
 
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], maxAge: '5m' }));

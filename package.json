@@ -4,10 +4,15 @@
   "private": true,
   "description": "Vgrow Platform · servidor Node.js + Express",
   "main": "app.js",
-  "scripts": { "start": "node app.js" },
-  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "mysql2": "^3.11.0"
   }
 }
