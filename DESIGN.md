@@ -182,7 +182,9 @@ La cifra va en tinta. El color de estado solo en la línea de contexto o en una 
 
 ### Insignias de semáforo
 
-Fondo suave + texto del color + un punto de 8 px. Texto: "Verde", "Amarillo", "Naranja", "Rojo". Radio 6 px.
+Fondo suave + texto en tinta (`#16202E`) + un punto de 8 px del color del estado. Texto: "Verde", "Amarillo", "Naranja", "Rojo". Radio 6 px, texto 13 px, peso 600.
+
+El texto no va en el color del semáforo: sobre su propio fondo suave da entre 4,0:1 y 4,5:1 y no pasa el mínimo de 4,5:1 (sección 10). El estado lo marcan el fondo suave y el punto.
 
 ### Formularios
 
