@@ -7,7 +7,7 @@ const SECTORES = ['Tecnología y Comunicaciones', 'Comercio', 'Industria', 'Gast
 const PAISES = ['Argentina', 'Uruguay', 'Chile', 'Paraguay', 'Bolivia', 'Perú', 'Colombia', 'México', 'Brasil', 'Otro'];
 const TAMANOS = ['Micro (1-4 emp.)', 'Pequeña (5-19 emp.)', 'Mediana (20-99 emp.)', 'Grande (100+ emp.)'];
 const ESTADOS = ['Empresa sólida', 'Estable con margen de mejora', 'Estable con debilidades', 'Problemas estructurales', 'Situación crítica'];
-const PATRONES = { P8: 'Colapso Silencioso', P6: 'Trampa de Liquidez', P3: 'Estructura Rígida', P1: 'Crecimiento Tóxico', WARN: 'Señal de atención' };
+const PATRONES = { P8: 'Colapso silencioso', P6: 'Trampa de liquidez', P3: 'Estructura rígida', P1: 'Crecimiento tóxico', WARN: 'Señal de atención' };
 const OBJETIVOS = { crecer: 'Crecer', rentab: 'Rentabilidad', ordenar: 'Ordenar', estabilizar: 'Estabilizar', expandir: 'Expandirse',
   socios: 'Socios', vender: 'Vender la empresa', otro: 'Otro' };
 const CLIENTES = ['uno', 'pocos', 'muchos'];
