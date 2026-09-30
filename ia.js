@@ -208,6 +208,18 @@ const TIPOS = {
   },
 };
 
+// Briefing del mercado para todos (uno por día): solo índices de los datos de referencia, nada de un usuario.
+// No se puede pedir desde el navegador: lo arma el servidor.
+function armarBriefingGeneral(ind) {
+  const x = { salud: num(ind, 'iSalud', 0, 10), crec: num(ind, 'iCrec', 0, 10), riesgo: num(ind, 'iRiesgo', 0, 10), n: num(ind, 'n', 0, 1e6) };
+  return { max_tokens: TIPOS.briefing_mercado.max_tokens, prompt:
+    'Sos el sistema de inteligencia económica de Vgrow. Generá un briefing breve para el tablero de empresarios PyME.\n\n' +
+    `Índices de los datos de referencia de Vgrow (${x.n} empresas): salud ${x.salud}/10, crecimiento ${x.crec}/10, riesgo ${x.riesgo}/10.\n\n` +
+    'Escribí 2 párrafos cortos sobre qué muestran esos índices. No los presentes como datos oficiales ni en tiempo real, ' +
+    'no hables de ninguna empresa en particular y no inventes cifras que no estén arriba.\n' +
+    SIN_HISTORIA + ' ' + SIN_CAUSAS + '\nMáximo 80 palabras en total. Sin bullets. ' + ESTILO };
+}
+
 // Devuelve { prompt, max_tokens } o lanza DatoInvalido.
 function armarPedido(cuerpo) {
   if (!cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) throw new DatoInvalido('Solicitud inválida.');
@@ -219,4 +231,4 @@ function armarPedido(cuerpo) {
   return { prompt: t.armar(cuerpo.datos), max_tokens: t.max_tokens };
 }
 
-module.exports = { armarPedido, DatoInvalido, TIPOS, RIESGOS, ACCIONES };
+module.exports = { armarPedido, armarBriefingGeneral, DatoInvalido, TIPOS, RIESGOS, ACCIONES };
