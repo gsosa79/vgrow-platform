@@ -198,7 +198,7 @@ El texto no va en el color del semáforo: sobre su propio fondo suave da entre 4
 
 ### Íconos
 
-Íconos de línea de un mismo set (trazo 1,75): **Lucide**, con el componente `VgIcon` de `public/index.html`. **No usar emojis en la interfaz**: se ven distinto en cada celular y restan seriedad. Los emojis se reemplazan de a poco, empezando por los más visibles.
+Íconos de línea de un mismo set (trazo 1,75): **Lucide**, con el componente `VgIcon` de `public/index.html`. **No usar emojis en la interfaz**: se ven distinto en cada celular y restan seriedad. Ya no queda ninguno; un ícono nuevo se agrega al set de `VG_ICON_DATA`, no como emoji.
 
 ### Pantallas vacías y bloqueos de plan
 
