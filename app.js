@@ -1,6 +1,6 @@
 // Vgrow Platform · servidor
 // Sirve la plataforma (public/index.html) y expone:
-//   POST /api/ia    → llama a la IA de Anthropic con la clave guardada en el servidor (.env)
+//   POST /api/ia    → análisis con IA: solo tipos fijos con plantilla en el servidor (ia.js), clave en .env
 //   POST /api/lead  → guarda empresa + email + diagnóstico en MySQL (y copia de respaldo en data/leads.jsonl)
 //   GET  /api/salud → para chequear que el servidor responde
 //   GET  /api/dataset    → dataset de referencia (empresas anónimas) desde MySQL
@@ -10,6 +10,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const db = require('./db/db');
+const { armarPedido, DatoInvalido } = require('./ia');
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
@@ -61,28 +62,40 @@ function datosCacheados(nombre, leer, clave) {
 app.get('/api/dataset', datosCacheados('el dataset', db.leerDataset, 'empresas'));
 app.get('/api/benchmarks', datosCacheados('los benchmarks', db.leerBenchmarks, 'sectores'));
 
-app.post('/api/ia', limitador(30, 60 * 60 * 1000), async (req, res) => {
+// IA: solo tipos de análisis conocidos, con la plantilla armada acá (ver ia.js).
+// Límite: 20 pedidos por hora por IP. max_tokens lo fija cada tipo, no el navegador.
+app.post('/api/ia', limitador(20, 60 * 60 * 1000), async (req, res) => {
+  let b = req.body;
+  if (typeof b === 'string') { try { b = JSON.parse(b || '{}'); } catch { b = null; } }
+  let pedido;
+  try {
+    pedido = armarPedido(b);
+  } catch (e) {
+    if (e instanceof DatoInvalido) return res.status(400).json({ error: e.message });
+    throw e;
+  }
   if (!API_KEY) return res.status(503).json({ error: 'La IA no está configurada en el servidor.' });
-  const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-  if (!Array.isArray(b.messages) || !b.messages.length) return res.status(400).json({ error: 'Solicitud inválida.' });
-  const cuerpo = {
-    model: MODEL,
-    max_tokens: Math.min(Number(b.max_tokens) || 800, 1500),
-    messages: b.messages,
-  };
-  if (typeof b.system === 'string') cuerpo.system = b.system;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), 25000);
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify(cuerpo),
+      body: JSON.stringify({ model: MODEL, max_tokens: pedido.max_tokens, messages: [{ role: 'user', content: pedido.prompt }] }),
+      signal: corte.signal,
     });
     const datos = await r.json();
-    if (!r.ok) console.error('[IA] error', r.status, datos?.error?.message);
-    res.status(r.status).json(datos);
+    if (!r.ok) {
+      console.error('[IA] error', r.status, datos?.error?.message);
+      return res.status(502).json({ error: 'La IA no pudo responder.' });
+    }
+    const texto = (datos.content || []).filter(x => x.type === 'text').map(x => x.text).join('').trim();
+    res.json({ texto });
   } catch (e) {
     console.error('[IA] fallo de red', e.message);
     res.status(502).json({ error: 'No se pudo contactar a la IA.' });
+  } finally {
+    clearTimeout(reloj);
   }
 });
 

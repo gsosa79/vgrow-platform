@@ -1,7 +1,7 @@
 [
  {
   "id": "T01",
-  "s": "Tecnología",
+  "s": "Tecnología y Comunicaciones",
   "p": "Uruguay",
   "t": "Micro",
   "m": 55,
@@ -17,7 +17,7 @@
  },
  {
   "id": "T02",
-  "s": "Tecnología",
+  "s": "Tecnología y Comunicaciones",
   "p": "Uruguay",
   "t": "Pequeña",
   "m": 62,
@@ -33,7 +33,7 @@
  },
  {
   "id": "T03",
-  "s": "Tecnología",
+  "s": "Tecnología y Comunicaciones",
   "p": "Argentina",
   "t": "Pequeña",
   "m": 50,
@@ -49,7 +49,7 @@
  },
  {
   "id": "T04",
-  "s": "Tecnología",
+  "s": "Tecnología y Comunicaciones",
   "p": "Argentina",
   "t": "Mediana",
   "m": 58,
@@ -65,7 +65,7 @@
  },
  {
   "id": "T05",
-  "s": "Tecnología",
+  "s": "Tecnología y Comunicaciones",
   "p": "Chile",
   "t": "Mediana",
   "m": 65,
@@ -81,7 +81,7 @@
  },
  {
   "id": "T06",
-  "s": "Tecnología",
+  "s": "Tecnología y Comunicaciones",
   "p": "Chile",
   "t": "Grande",
   "m": 68,
@@ -97,7 +97,7 @@
  },
  {
   "id": "T07",
-  "s": "Tecnología",
+  "s": "Tecnología y Comunicaciones",
   "p": "Uruguay",
   "t": "Micro",
   "m": 40,
@@ -113,7 +113,7 @@
  },
  {
   "id": "S01",
-  "s": "Servicios",
+  "s": "Servicios Profesionales",
   "p": "Uruguay",
   "t": "Micro",
   "m": 42,
@@ -129,7 +129,7 @@
  },
  {
   "id": "S02",
-  "s": "Servicios",
+  "s": "Servicios Profesionales",
   "p": "Uruguay",
   "t": "Pequeña",
   "m": 50,
@@ -145,7 +145,7 @@
  },
  {
   "id": "S03",
-  "s": "Servicios",
+  "s": "Servicios Profesionales",
   "p": "Uruguay",
   "t": "Mediana",
   "m": 44,
@@ -161,7 +161,7 @@
  },
  {
   "id": "S04",
-  "s": "Servicios",
+  "s": "Servicios Profesionales",
   "p": "Argentina",
   "t": "Micro",
   "m": 35,
@@ -177,7 +177,7 @@
  },
  {
   "id": "S05",
-  "s": "Servicios",
+  "s": "Servicios Profesionales",
   "p": "Argentina",
   "t": "Pequeña",
   "m": 38,
@@ -193,7 +193,7 @@
  },
  {
   "id": "S06",
-  "s": "Servicios",
+  "s": "Servicios Profesionales",
   "p": "Chile",
   "t": "Mediana",
   "m": 48,
@@ -209,7 +209,7 @@
  },
  {
   "id": "S07",
-  "s": "Servicios",
+  "s": "Servicios Profesionales",
   "p": "Paraguay",
   "t": "Micro",
   "m": 28,
@@ -225,7 +225,7 @@
  },
  {
   "id": "R01",
-  "s": "Retail",
+  "s": "Comercio",
   "p": "Argentina",
   "t": "Micro",
   "m": 20,
@@ -241,7 +241,7 @@
  },
  {
   "id": "R02",
-  "s": "Retail",
+  "s": "Comercio",
   "p": "Argentina",
   "t": "Pequeña",
   "m": 24,
@@ -257,7 +257,7 @@
  },
  {
   "id": "R03",
-  "s": "Retail",
+  "s": "Comercio",
   "p": "Argentina",
   "t": "Mediana",
   "m": 28,
@@ -273,7 +273,7 @@
  },
  {
   "id": "R04",
-  "s": "Retail",
+  "s": "Comercio",
   "p": "Uruguay",
   "t": "Pequeña",
   "m": 30,
@@ -289,7 +289,7 @@
  },
  {
   "id": "R05",
-  "s": "Retail",
+  "s": "Comercio",
   "p": "Chile",
   "t": "Mediana",
   "m": 33,
@@ -305,7 +305,7 @@
  },
  {
   "id": "L01",
-  "s": "Logística",
+  "s": "Logística y Transporte",
   "p": "Uruguay",
   "t": "Pequeña",
   "m": 20,
@@ -321,7 +321,7 @@
  },
  {
   "id": "L02",
-  "s": "Logística",
+  "s": "Logística y Transporte",
   "p": "Uruguay",
   "t": "Mediana",
   "m": 24,
@@ -337,7 +337,7 @@
  },
  {
   "id": "L03",
-  "s": "Logística",
+  "s": "Logística y Transporte",
   "p": "Uruguay",
   "t": "Grande",
   "m": 28,
@@ -353,7 +353,7 @@
  },
  {
   "id": "L04",
-  "s": "Logística",
+  "s": "Logística y Transporte",
   "p": "Argentina",
   "t": "Pequeña",
   "m": 16,
@@ -369,7 +369,7 @@
  },
  {
   "id": "L05",
-  "s": "Logística",
+  "s": "Logística y Transporte",
   "p": "Argentina",
   "t": "Mediana",
   "m": 20,
@@ -385,7 +385,7 @@
  },
  {
   "id": "M01",
-  "s": "Manufactura",
+  "s": "Industria",
   "p": "Uruguay",
   "t": "Pequeña",
   "m": 18,
@@ -401,7 +401,7 @@
  },
  {
   "id": "M02",
-  "s": "Manufactura",
+  "s": "Industria",
   "p": "Uruguay",
   "t": "Mediana",
   "m": 22,
@@ -417,7 +417,7 @@
  },
  {
   "id": "M03",
-  "s": "Manufactura",
+  "s": "Industria",
   "p": "Argentina",
   "t": "Pequeña",
   "m": 14,
@@ -481,7 +481,7 @@
  },
  {
   "id": "F01",
-  "s": "Finanzas",
+  "s": "Finanzas y Seguros",
   "p": "Uruguay",
   "t": "Mediana",
   "m": 40,
@@ -497,7 +497,7 @@
  },
  {
   "id": "F02",
-  "s": "Finanzas",
+  "s": "Finanzas y Seguros",
   "p": "Chile",
   "t": "Grande",
   "m": 45,
