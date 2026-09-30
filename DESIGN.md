@@ -198,7 +198,7 @@ El texto no va en el color del semáforo: sobre su propio fondo suave da entre 4
 
 ### Íconos
 
-Íconos de línea de un mismo set (trazo 1,75). **No usar emojis en la interfaz**: se ven distinto en cada celular y restan seriedad. Los emojis se reemplazan de a poco, empezando por los más visibles.
+Íconos de línea de un mismo set (trazo 1,75): **Lucide**, con el componente `VgIcon` de `public/index.html`. **No usar emojis en la interfaz**: se ven distinto en cada celular y restan seriedad. Los emojis se reemplazan de a poco, empezando por los más visibles.
 
 ### Pantallas vacías y bloqueos de plan
 
@@ -232,6 +232,7 @@ El texto no va en el color del semáforo: sobre su propio fondo suave da entre 4
 - Miles con punto, decimales con coma: `$ 1.250.000`, `1,5 meses`, `40,5 %`.
 - Moneda: `$` para pesos, `US$` para dólares. Si la plataforma no sabe la moneda, usar la que eligió el usuario.
 - Fechas: `28 set. 2026`.
+- En el código: usar `vgNum`, `vgMonto`, `vgMontoCorto`, `vgPct` y `vgScore` (en `public/index.html`). `vgMonto` recibe la moneda (`UYU` → `$`, `USD` → `US$`, `ARS` → `AR$`, `CLP` → `CLP$`, `PYG` → `Gs.`); si no se pasa, usa `VG_MONEDA`. Montos abreviados: `$ 1,5 M`, `$ 250 mil`.
 
 **Ejemplos:**
 
