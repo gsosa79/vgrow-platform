@@ -3,7 +3,8 @@
 Servidor Node.js + Express para vgrowapp.com.
 
 - `public/index.html` — la plataforma
-- `app.js` — servidor: `/api/ia` (IA con clave en el servidor), `/api/lead` (registros), `/api/salud`
+- `app.js` — servidor: `/api/ia` (IA con clave en el servidor), `/api/lead` (registros), `/api/dataset` y `/api/benchmarks` (datos de referencia desde MySQL), `/api/salud`
+- `db/datos/` — dataset de referencia (35 empresas) y benchmarks por sector; se cargan en la base con `bash deploy/cargar-datos.sh` (se puede repetir sin duplicar)
 - `deploy/` — configuración de Nginx, instalación inicial y actualización automática
 
 Cualquier cambio que se suba a la rama `main` aparece en el sitio en menos de 5 minutos.

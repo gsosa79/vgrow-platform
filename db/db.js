@@ -68,4 +68,82 @@ async function guardarLead(d, ip) {
   }
 }
 
-module.exports = { conectar, salud, guardarLead };
+// ── Dataset de referencia y benchmarks por sector ─────────────────────────────
+// La plataforma los usa con los mismos nombres cortos que tenían en index.html.
+const n = v => (v === null || v === undefined) ? null : Number(v); // DECIMAL llega como texto
+
+async function leerDataset() {
+  const p = conectar();
+  if (!p) return null;
+  const [filas] = await p.query('SELECT * FROM dataset_empresas WHERE activo=1 ORDER BY orden, ref');
+  return filas.map(f => ({
+    id: f.ref, s: f.sector, p: f.pais, t: f.tamano, m: n(f.margen), cr: n(f.crecimiento),
+    eco: n(f.score_eco), gest: n(f.score_gestion), tot: n(f.score_total), caja: n(f.caja_meses),
+    sem: f.semaforo, v: n(f.ventas), c: n(f.costos), etapa: f.etapa,
+  }));
+}
+
+async function leerBenchmarks() {
+  const p = conectar();
+  if (!p) return null;
+  const [filas] = await p.query('SELECT * FROM benchmarks_sector WHERE activo=1 ORDER BY orden, sector');
+  const sectores = {};
+  for (const f of filas) {
+    sectores[f.sector] = {
+      margen: [n(f.margen_min), n(f.margen_max)], margenAvg: n(f.margen_prom), crecAvg: n(f.crec_prom),
+      cajaAvg: n(f.caja_prom), cobAvg: n(f.cobertura_prom), scoreAvg: n(f.score_prom),
+      eenVab: n(f.een_vab), eenVabSector: f.een_vab_sector, podGrowth: n(f.empleo_var), podSector: f.empleo_sector,
+      fuenteMargen: f.fuente_margen,
+    };
+  }
+  return sectores;
+}
+
+// Carga (o actualiza) el dataset y los benchmarks. Se puede correr varias veces:
+// actualiza por clave, no duplica, y desactiva lo que ya no está en los archivos.
+async function cargarDatos(dataset, benchmarks) {
+  const p = conectar();
+  if (!p) throw new Error('Falta la configuración de la base (DB_HOST en .env).');
+  const conn = await p.getConnection();
+  try {
+    await conn.beginTransaction();
+    for (const [i, e] of dataset.entries()) {
+      await conn.query(
+        `INSERT INTO dataset_empresas (ref, sector, pais, tamano, margen, crecimiento, score_eco, score_gestion, score_total,
+           caja_meses, semaforo, ventas, costos, etapa, orden, activo)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)
+         ON DUPLICATE KEY UPDATE sector=VALUES(sector), pais=VALUES(pais), tamano=VALUES(tamano), margen=VALUES(margen),
+           crecimiento=VALUES(crecimiento), score_eco=VALUES(score_eco), score_gestion=VALUES(score_gestion),
+           score_total=VALUES(score_total), caja_meses=VALUES(caja_meses), semaforo=VALUES(semaforo), ventas=VALUES(ventas),
+           costos=VALUES(costos), etapa=VALUES(etapa), orden=VALUES(orden), activo=1`,
+        [e.id, e.s, e.p, e.t, e.m, e.cr, e.eco, e.gest, e.tot, e.caja, e.sem, e.v, e.c, e.etapa || null, i]);
+    }
+    await conn.query('UPDATE dataset_empresas SET activo=0 WHERE ref NOT IN (?)', [dataset.map(e => e.id)]);
+    const sectores = Object.entries(benchmarks);
+    for (const [i, [sector, r]] of sectores.entries()) {
+      await conn.query(
+        `INSERT INTO benchmarks_sector (sector, margen_min, margen_max, margen_prom, crec_prom, caja_prom, cobertura_prom,
+           score_prom, een_vab, een_vab_sector, empleo_var, empleo_sector, fuente_margen, orden, activo)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)
+         ON DUPLICATE KEY UPDATE margen_min=VALUES(margen_min), margen_max=VALUES(margen_max), margen_prom=VALUES(margen_prom),
+           crec_prom=VALUES(crec_prom), caja_prom=VALUES(caja_prom), cobertura_prom=VALUES(cobertura_prom),
+           score_prom=VALUES(score_prom), een_vab=VALUES(een_vab), een_vab_sector=VALUES(een_vab_sector),
+           empleo_var=VALUES(empleo_var), empleo_sector=VALUES(empleo_sector), fuente_margen=VALUES(fuente_margen),
+           orden=VALUES(orden), activo=1`,
+        [sector, r.margen[0], r.margen[1], r.margenAvg, r.crecAvg, r.cajaAvg, r.cobAvg, r.scoreAvg, r.eenVab ?? null,
+         r.eenVabSector ?? null, r.podGrowth ?? null, r.podSector ?? null, r.fuenteMargen ?? null, i]);
+    }
+    await conn.query('UPDATE benchmarks_sector SET activo=0 WHERE sector NOT IN (?)', [sectores.map(([s]) => s)]);
+    await conn.commit();
+    const [[a]] = await conn.query('SELECT COUNT(*) AS n FROM dataset_empresas WHERE activo=1');
+    const [[b]] = await conn.query('SELECT COUNT(*) AS n FROM benchmarks_sector WHERE activo=1');
+    return { empresas: a.n, sectores: b.n };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+module.exports = { conectar, salud, guardarLead, leerDataset, leerBenchmarks, cargarDatos };

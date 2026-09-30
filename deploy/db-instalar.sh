@@ -35,6 +35,7 @@ chmod 600 .env
 echo "== 6/6 Actualizando la app =="
 npm install --omit=dev --no-audit --no-fund
 node db/importar-archivo.js
+node db/cargar-datos.js
 pm2 restart vgrow --update-env >/dev/null
 sleep 2
 echo ""
