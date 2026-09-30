@@ -39,9 +39,10 @@ Variables del `.env`:
 | `EMAIL_REMITENTE`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | datos de Amazon SES | — |
 | `ANTHROPIC_MODEL_FREE` | modelo de Freemium y del briefing | `claude-haiku-4-5` |
 | `ANTHROPIC_MODEL_PAGO` | modelo de los planes pagos (y de todo, con el login apagado) | `ANTHROPIC_MODEL` o `claude-sonnet-5` |
-| `ADMIN_EMAILS` | emails (separados por coma) que pueden ver `/api/metricas` | — |
+| `ADMIN_EMAILS` | emails (separados por coma) que pueden ver `/api/metricas` y, con el login prendido, usar `?demo=1` | — |
+| `CUOTA_IA_FREE`, `CUOTA_IA_BASIC`, `CUOTA_IA_PRO` | análisis con IA por mes y por empresa según el plan | 3, 20 y 50 |
 | `METRICAS_TOKEN` | clave para pedir `/api/metricas` desde el servidor (`Authorization: Bearer …`), 20 caracteres o más | — |
 
 Migrar la base: `bash deploy/migrar.sh`. Métricas: `bash deploy/metricas.sh`.
 
-Datos de referencia: la página ya no trae el dataset. `/api/dataset` devuelve solo resultados agregados y ninguna comparación con menos de 5 empresas; con `?demo=1` devuelve el dataset completo para los módulos de demostración.
+Datos de referencia: la página ya no trae el dataset. `/api/dataset` devuelve solo resultados agregados y ninguna comparación con menos de 5 empresas; con `?demo=1` devuelve el dataset completo para los módulos de demostración (con el login prendido, solo a administradores). Cuando un grupo no llega a 5 empresas, la pantalla lo dice en lugar de esconder la sección.

@@ -76,6 +76,11 @@ function datosCacheados(nombre, leer, clave) {
 // Dataset: solo resultados agregados. Con ?demo=1 se puede ver completo (los módulos de demostración lo usan).
 app.get('/api/dataset', a(async (req, res) => {
   if (req.query.demo === '1') {
+    // Con el login prendido, el dataset completo es solo para administradores
+    if (loginHabilitado()) {
+      const s = await sesionDe(req);
+      if (!s || !s.admin) return res.status(403).json({ error: 'El modo demo es solo para administradores.' });
+    }
     const todas = await comparar.dataset();
     res.set('Cache-Control', 'private, no-store');
     return res.json({ empresas: todas, total: todas.length });
@@ -99,7 +104,7 @@ app.get('/api/benchmark', a(async (req, res) => {
   if (loginHabilitado()) {
     const s = await sesionDe(req);
     if (!s) return res.status(401).json({ error: 'Iniciá sesión para ver el benchmark.', sinSesion: true });
-    if (!s.permisos.benchmark) return res.status(403).json({ error: 'El benchmark es parte del plan Basic.', plan: s.plan });
+    if (!s.permisos.benchmark && !s.admin) return res.status(403).json({ error: 'El benchmark es parte del plan Basic.', plan: s.plan });
   }
   const { sector, pais, tamano } = req.query;
   if (sector && !SECTORES_OK.includes(sector)) return res.status(400).json({ error: 'Rubro desconocido.' });
