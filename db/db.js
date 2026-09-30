@@ -68,6 +68,31 @@ async function guardarLead(d, ip) {
   }
 }
 
+// Guarda un evento suelto en la tabla eventos (por ejemplo, un pedido de "Avisame")
+async function guardarEvento(tipo, email, ip, datos) {
+  const p = conectar();
+  if (!p) return false;
+  await p.query('INSERT INTO eventos (tipo, email, ip, datos) VALUES (?,?,?,?)',
+    [txt(tipo, 40), txt(email, 200), txt(ip, 64), JSON.stringify(datos || {})]);
+  return true;
+}
+
+// Pedidos de "Avisame cuando esté disponible", por plan y por módulo (dias: solo los últimos N días)
+async function contarAvisos(dias) {
+  const p = conectar();
+  if (!p) throw new Error('Falta la configuración de la base (DB_HOST en .env).');
+  const filtro = dias ? 'AND creado >= NOW() - INTERVAL ? DAY' : '';
+  const [filas] = await p.query(
+    `SELECT JSON_UNQUOTE(JSON_EXTRACT(datos, '$.plan')) AS plan, JSON_UNQUOTE(JSON_EXTRACT(datos, '$.modulo')) AS modulo,
+            COUNT(*) AS pedidos, COUNT(DISTINCT email) AS personas
+       FROM eventos WHERE tipo = 'aviso_plan' ${filtro}
+      GROUP BY plan, modulo ORDER BY plan, pedidos DESC, modulo`, dias ? [dias] : []);
+  const [[total]] = await p.query(
+    `SELECT COUNT(*) AS pedidos, COUNT(DISTINCT email) AS personas FROM eventos WHERE tipo = 'aviso_plan' ${filtro}`, dias ? [dias] : []);
+  return { filas: filas.map(f => ({ ...f, pedidos: Number(f.pedidos), personas: Number(f.personas) })),
+           total: { pedidos: Number(total.pedidos), personas: Number(total.personas) } };
+}
+
 // ── Dataset de referencia y benchmarks por sector ─────────────────────────────
 // La plataforma los usa con los mismos nombres cortos que tenían en index.html.
 const n = v => (v === null || v === undefined) ? null : Number(v); // DECIMAL llega como texto
@@ -146,4 +171,4 @@ async function cargarDatos(dataset, benchmarks) {
   }
 }
 
-module.exports = { conectar, salud, guardarLead, leerDataset, leerBenchmarks, cargarDatos };
+module.exports = { conectar, salud, guardarLead, guardarEvento, contarAvisos, leerDataset, leerBenchmarks, cargarDatos };
