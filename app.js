@@ -2,6 +2,7 @@
 // Sirve la plataforma (public/index.html) y expone:
 //   POST /api/ia    → análisis con IA: solo tipos fijos con plantilla en el servidor (ia.js), clave en .env
 //   POST /api/lead  → guarda empresa + email + diagnóstico en MySQL (y copia de respaldo en data/leads.jsonl)
+//   POST /api/aviso → "Avisame cuando esté disponible": guarda plan y módulo en la tabla eventos
 //   GET  /api/salud → para chequear que el servidor responde
 //   GET  /api/dataset    → dataset de referencia (empresas anónimas) desde MySQL
 //   GET  /api/benchmarks → referencias por sector desde MySQL
@@ -115,6 +116,38 @@ app.post('/api/lead', limitador(60, 60 * 60 * 1000), async (req, res) => {
     console.error('[lead db]', e.message);
     res.json({ ok: true, respaldo: true });
   }
+});
+
+// "Avisame cuando esté disponible" en las pantallas de bloqueo de los planes pagos.
+// Guarda en eventos (tipo aviso_plan) el plan, el módulo y el email. Conteo: bash deploy/metricas.sh
+const AVISO_PLANES = ['basic', 'pro'];
+const AVISO_MODULOS = ['benchmark', 'historial', 'planificacion', 'simulacion', 'indices', 'ia', 'fpa',
+  'vbe', 'dataset', 'inteligencia', 'leads', 'marketplace'];
+app.post('/api/aviso', limitador(20, 60 * 60 * 1000), async (req, res) => {
+  let d = req.body;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch { d = {}; } }
+  if (!d || typeof d !== 'object') d = {};
+  const plan = String(d.plan || '');
+  const modulo = String(d.modulo || '');
+  const email = String(d.email || '').trim().toLowerCase();
+  if (!AVISO_PLANES.includes(plan) || !AVISO_MODULOS.includes(modulo)) return res.status(400).json({ error: 'Plan o módulo desconocido.' });
+  if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(email)) return res.status(400).json({ error: 'Ingresá un email válido.' });
+  const registro = { tipo: 'aviso_plan', plan, modulo, email, ip: req.ip, recibido: new Date().toISOString() };
+  fs.appendFile(path.join(DATA_DIR, 'avisos.jsonl'), JSON.stringify(registro) + '\n', err => { if (err) console.error('[aviso archivo]', err.message); });
+  try {
+    const guardado = await db.guardarEvento('aviso_plan', email, req.ip, { plan, modulo });
+    res.json(guardado ? { ok: true } : { ok: true, respaldo: true });
+  } catch (e) {
+    console.error('[aviso db]', e.message);
+    res.json({ ok: true, respaldo: true });
+  }
+});
+
+// Un cuerpo mal armado (JSON roto) responde un error corto, sin mostrar detalles del servidor
+app.use('/api', (err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Datos mal armados.' });
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'Demasiados datos.' });
+  next(err);
 });
 
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], maxAge: '5m' }));
