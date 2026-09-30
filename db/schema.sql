@@ -102,3 +102,149 @@ CREATE TABLE IF NOT EXISTS benchmarks_sector (
   activo          TINYINT(1)   NOT NULL DEFAULT 1,
   actualizado     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ═══ Identidad y arquitectura ═══════════════════════════════════════════════
+-- usuarios → organizaciones (con rol) → empresas → periodos → diagnosticos.
+-- Las columnas nuevas de tablas que ya existían (empresas, diagnosticos) las agrega db/migrar.js.
+
+CREATE TABLE IF NOT EXISTS organizaciones (
+  id      INT AUTO_INCREMENT PRIMARY KEY,
+  nombre  VARCHAR(200) NOT NULL,
+  creado  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Rol del usuario en cada organización: dueño o contador
+CREATE TABLE IF NOT EXISTS miembros (
+  usuario_id       INT NOT NULL,
+  organizacion_id  INT NOT NULL,
+  rol              ENUM('dueno','contador') NOT NULL DEFAULT 'dueno',
+  creado           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (usuario_id, organizacion_id),
+  KEY ix_miembro_org (organizacion_id),
+  CONSTRAINT fk_miembro_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_miembro_org FOREIGN KEY (organizacion_id) REFERENCES organizaciones(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Un período por empresa y mes; cada diagnóstico cae en un período
+CREATE TABLE IF NOT EXISTS periodos (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  empresa_id  INT NOT NULL,
+  anio        SMALLINT NOT NULL,
+  mes         TINYINT NOT NULL,
+  creado      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_periodo (empresa_id, anio, mes),
+  CONSTRAINT fk_periodo_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Acciones con código fijo (armadas a partir de las recomendaciones de la plataforma)
+CREATE TABLE IF NOT EXISTS acciones_catalogo (
+  codigo       VARCHAR(40)  NOT NULL PRIMARY KEY,
+  palanca      VARCHAR(20)  NOT NULL,
+  titulo       VARCHAR(200) NOT NULL,
+  descripcion  TEXT,
+  activo       TINYINT(1)   NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO acciones_catalogo (codigo, palanca, titulo, descripcion) VALUES
+  ('MARGEN_PRECIO_B2B', 'margen', 'Revisá si podés ajustar tu propuesta de valor para sostener un precio mayor', 'En B2B el precio se negocia cliente a cliente: identificar a quién se le puede subir sin riesgo de perderlo.'),
+  ('MARGEN_MIX', 'margen', 'Revisá si hay productos o servicios con margen más alto que podrías priorizar', 'Calcular el margen real por producto o servicio y enfocar el esfuerzo en las líneas que más dejan.'),
+  ('VENTAS_CLIENTES_ACTUALES', 'ventas', 'Desarrollá a tus clientes actuales antes de buscar nuevos', 'Contactar a los clientes actuales con una propuesta concreta de qué más se les puede ofrecer.'),
+  ('VENTAS_MEJORES_CLIENTES', 'ventas', 'Identificá cuáles de tus clientes tienen más potencial de crecimiento', 'Analizar quiénes son los mejores clientes y qué tienen en común para saber a quién más contactar.'),
+  ('ESTRUCTURA_REVISAR', 'estructura', 'Revisá qué costos fijos podés reducir o renegociar este mes', 'Listar los costos fijos y marcar los que no son imprescindibles: suscripciones, servicios, contratos viejos.'),
+  ('CAJA_PLAN_12_SEMANAS', 'caja', 'Armá un plan de caja para las próximas 12 semanas', 'Anotar semana por semana lo que se espera cobrar y pagar, y actuar antes de una semana en rojo.'),
+  ('GESTION_PRESUPUESTO', 'gestion', 'Armar un presupuesto anual', 'Sin presupuesto no hay referencia para medir.'),
+  ('GESTION_REVISION_MENSUAL', 'gestion', 'Revisar tus números una vez por mes', 'Así se ven los cambios a tiempo.')
+ON DUPLICATE KEY UPDATE palanca = VALUES(palanca), titulo = VALUES(titulo), descripcion = VALUES(descripcion);
+
+-- Acción recomendada a una empresa en un período, su estado y el período siguiente
+-- (para ligar la acción con lo que muestra el diagnóstico siguiente, sin afirmar causalidad)
+CREATE TABLE IF NOT EXISTS acciones_empresa (
+  id                    INT AUTO_INCREMENT PRIMARY KEY,
+  empresa_id            INT NOT NULL,
+  accion_codigo         VARCHAR(40) NOT NULL,
+  periodo_id            INT NOT NULL,
+  diagnostico_id        INT NULL,
+  estado                ENUM('recomendada','en_curso','hecha','descartada') NOT NULL DEFAULT 'recomendada',
+  periodo_siguiente_id  INT NULL,
+  creado                DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_accion_periodo (empresa_id, periodo_id, accion_codigo),
+  CONSTRAINT fk_acc_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id),
+  CONSTRAINT fk_acc_codigo FOREIGN KEY (accion_codigo) REFERENCES acciones_catalogo(codigo),
+  CONSTRAINT fk_acc_periodo FOREIGN KEY (periodo_id) REFERENCES periodos(id),
+  CONSTRAINT fk_acc_siguiente FOREIGN KEY (periodo_siguiente_id) REFERENCES periodos(id),
+  CONSTRAINT fk_acc_diag FOREIGN KEY (diagnostico_id) REFERENCES diagnosticos(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Plan de cada empresa. Todas arrancan en Freemium. proveedor_pago queda vacío hasta conectar Mercado Pago o Stripe.
+CREATE TABLE IF NOT EXISTS suscripciones (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  empresa_id      INT NOT NULL,
+  plan            ENUM('freemium','basic','pro') NOT NULL DEFAULT 'freemium',
+  estado          ENUM('activa','cancelada','vencida') NOT NULL DEFAULT 'activa',
+  desde           DATE NOT NULL,
+  hasta           DATE NULL,
+  proveedor_pago  VARCHAR(40) NULL,
+  creado          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_susc_empresa (empresa_id, estado),
+  CONSTRAINT fk_susc_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Links mágicos de ingreso (se guarda solo el hash del token; vencen a los 15 minutos y se usan una vez)
+CREATE TABLE IF NOT EXISTS login_tokens (
+  token_hash  CHAR(64) NOT NULL PRIMARY KEY,
+  email       VARCHAR(200) NOT NULL,
+  vence       DATETIME NOT NULL,
+  usado       DATETIME NULL,
+  ip          VARCHAR(64),
+  creado      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_token_email (email, creado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Sesiones (cookie httpOnly de 30 días; se guarda solo el hash)
+CREATE TABLE IF NOT EXISTS sesiones (
+  token_hash  CHAR(64) NOT NULL PRIMARY KEY,
+  usuario_id  INT NOT NULL,
+  empresa_id  INT NULL,
+  vence       DATETIME NOT NULL,
+  creado      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ultimo_uso  DATETIME NULL,
+  KEY ix_sesion_usuario (usuario_id),
+  CONSTRAINT fk_sesion_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Cada pedido a la IA: para la cuota por empresa y las métricas por día y por plan
+CREATE TABLE IF NOT EXISTS ia_uso (
+  id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+  empresa_id    INT NULL,
+  usuario_id    INT NULL,
+  tipo          VARCHAR(30) NOT NULL,
+  plan          VARCHAR(20) NOT NULL,
+  modelo        VARCHAR(60) NULL,
+  mes           CHAR(7) NOT NULL,
+  cuenta        TINYINT(1) NOT NULL DEFAULT 0,
+  guardado      TINYINT(1) NOT NULL DEFAULT 0,
+  alerta_usada  TINYINT(1) NOT NULL DEFAULT 0,
+  creado        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_ia_empresa_mes (empresa_id, mes),
+  KEY ix_ia_creado (creado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Respuestas guardadas: la explicación se regenera solo si cambian los números (huella)
+CREATE TABLE IF NOT EXISTS ia_respuestas (
+  empresa_id  INT NOT NULL,
+  tipo        VARCHAR(30) NOT NULL,
+  huella      CHAR(64) NOT NULL,
+  texto       TEXT NOT NULL,
+  modelo      VARCHAR(60),
+  creado      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (empresa_id, tipo, huella)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Briefing del mercado: uno por día, igual para todos
+CREATE TABLE IF NOT EXISTS ia_briefing (
+  fecha   DATE NOT NULL PRIMARY KEY,
+  texto   TEXT NOT NULL,
+  modelo  VARCHAR(60),
+  creado  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

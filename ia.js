@@ -14,8 +14,8 @@ const CLIENTES = ['uno', 'pocos', 'muchos'];
 const COBRO = ['contado', '30d', '60d'];
 const MODELO = ['b2b', 'b2c', 'mixto'];
 const NIVEL = { si: 'Alta', parcial: 'Media', no: 'Baja' };
-const PROVEEDORES = ['contado', '30d', '60d', 'sin'];
-const PLAZO_TXT = { contado: 'al contado', '30d': 'a 30 días', '60d': 'a 60 días o más', sin: 'no tiene proveedores importantes' };
+const PROVEEDORES = ['contado', '30d', '60d', 'sin', 'nose'];
+const PLAZO_TXT = { contado: 'al contado', '30d': 'a 30 días', '60d': 'a 60 días o más', sin: 'no tiene proveedores importantes', nose: 'no lo sabe o prefirió no contestar' };
 const MONEDAS = { UYU: '$', USD: 'US$', ARS: 'AR$', CLP: 'CLP$', PYG: 'Gs.', LOC: '$' };
 // Riesgo principal y acción prioritaria: los define la plataforma (vgRiesgo). La IA explica, no elige otros.
 const RIESGOS = {
@@ -120,7 +120,7 @@ const TIPOS = {
         'Sin títulos en negrita. Terminá con punto. Sin firma.\n\n' +
         'REGLAS:\n- ' + SIN_HISTORIA + (x.previos ? ' No recibís ese historial.' : ' Es el primer diagnóstico de esta empresa.') + '\n- ' + SIN_CAUSAS + '\n' +
         '- El plazo de cobro es el que declaró el usuario, no un dato medido.' +
-        (x.pago_prov ? '' : ' No hay dato de pago a proveedores: no calcules el ciclo de caja ni saques conclusiones sobre el capital de trabajo.') + '\n' +
+        (x.pago_prov && x.pago_prov !== 'nose' ? '' : ' No hay dato de pago a proveedores: no calcules el ciclo de caja ni saques conclusiones sobre el capital de trabajo.') + '\n' +
         '- No calcules ROE, ROA ni EBITDA: faltan patrimonio, activos y depreciaciones.\n' +
         '- Si un número depende de un supuesto, decí cuál es el supuesto.\n' +
         'GUARDRAIL: No atribuyas causas que no puedan demostrarse con los datos disponibles. Si detectás una desviación relevante ' +
@@ -208,6 +208,18 @@ const TIPOS = {
   },
 };
 
+// Briefing del mercado para todos (uno por día): solo índices de los datos de referencia, nada de un usuario.
+// No se puede pedir desde el navegador: lo arma el servidor.
+function armarBriefingGeneral(ind) {
+  const x = { salud: num(ind, 'iSalud', 0, 10), crec: num(ind, 'iCrec', 0, 10), riesgo: num(ind, 'iRiesgo', 0, 10), n: num(ind, 'n', 0, 1e6) };
+  return { max_tokens: TIPOS.briefing_mercado.max_tokens, prompt:
+    'Sos el sistema de inteligencia económica de Vgrow. Generá un briefing breve para el tablero de empresarios PyME.\n\n' +
+    `Índices de los datos de referencia de Vgrow (${x.n} empresas): salud ${x.salud}/10, crecimiento ${x.crec}/10, riesgo ${x.riesgo}/10.\n\n` +
+    'Escribí 2 párrafos cortos sobre qué muestran esos índices. No los presentes como datos oficiales ni en tiempo real, ' +
+    'no hables de ninguna empresa en particular y no inventes cifras que no estén arriba.\n' +
+    SIN_HISTORIA + ' ' + SIN_CAUSAS + '\nMáximo 80 palabras en total. Sin bullets. ' + ESTILO };
+}
+
 // Devuelve { prompt, max_tokens } o lanza DatoInvalido.
 function armarPedido(cuerpo) {
   if (!cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) throw new DatoInvalido('Solicitud inválida.');
@@ -219,4 +231,4 @@ function armarPedido(cuerpo) {
   return { prompt: t.armar(cuerpo.datos), max_tokens: t.max_tokens };
 }
 
-module.exports = { armarPedido, DatoInvalido, TIPOS, RIESGOS, ACCIONES };
+module.exports = { armarPedido, armarBriefingGeneral, DatoInvalido, TIPOS, RIESGOS, ACCIONES };
