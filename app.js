@@ -3,6 +3,8 @@
 //   POST /api/ia    → llama a la IA de Anthropic con la clave guardada en el servidor (.env)
 //   POST /api/lead  → guarda empresa + email + diagnóstico en MySQL (y copia de respaldo en data/leads.jsonl)
 //   GET  /api/salud → para chequear que el servidor responde
+//   GET  /api/dataset    → dataset de referencia (empresas anónimas) desde MySQL
+//   GET  /api/benchmarks → referencias por sector desde MySQL
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
@@ -34,6 +36,30 @@ function limitador(max, ventanaMs) {
 }
 
 app.get('/api/salud', async (req, res) => res.json({ ok: true, ia: Boolean(API_KEY), db: await db.salud(), hora: new Date().toISOString() }));
+
+// Dataset y benchmarks: se leen de la base y se guardan 5 minutos en memoria.
+// Si la base no responde, devuelven 503 y la plataforma usa los datos que trae el código.
+function datosCacheados(nombre, leer, clave) {
+  let cache = null, hasta = 0;
+  return async (req, res) => {
+    try {
+      if (!cache || Date.now() > hasta) {
+        const datos = await leer();
+        const vacio = !datos || (Array.isArray(datos) ? !datos.length : !Object.keys(datos).length);
+        if (vacio) return res.status(503).json({ error: `Sin ${nombre} en la base.` });
+        cache = datos; hasta = Date.now() + 5 * 60 * 1000;
+      }
+      res.set('Cache-Control', 'public, max-age=300');
+      res.json({ [clave]: cache, total: Array.isArray(cache) ? cache.length : Object.keys(cache).length });
+    } catch (e) {
+      console.error(`[${nombre}]`, e.message);
+      if (cache) return res.json({ [clave]: cache, total: Array.isArray(cache) ? cache.length : Object.keys(cache).length });
+      res.status(503).json({ error: `No se pudo leer ${nombre}.` });
+    }
+  };
+}
+app.get('/api/dataset', datosCacheados('el dataset', db.leerDataset, 'empresas'));
+app.get('/api/benchmarks', datosCacheados('los benchmarks', db.leerBenchmarks, 'sectores'));
 
 app.post('/api/ia', limitador(30, 60 * 60 * 1000), async (req, res) => {
   if (!API_KEY) return res.status(503).json({ error: 'La IA no está configurada en el servidor.' });

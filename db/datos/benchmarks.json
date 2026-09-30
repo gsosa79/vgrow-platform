@@ -1,0 +1,162 @@
+{
+ "Tecnología y Comunicaciones": {
+  "margen": [
+   40,
+   75
+  ],
+  "margenAvg": 57,
+  "crecAvg": 18,
+  "cajaAvg": 4.2,
+  "cobAvg": 1.9,
+  "scoreAvg": 7.8,
+  "eenVab": 42.8,
+  "eenVabSector": "Información y Comunicación",
+  "podGrowth": 3.3,
+  "podSector": "Información y Comunicación",
+  "fuenteMargen": "Estimación Vgrow + Uruguay XXI TIC"
+ },
+ "Servicios Profesionales": {
+  "margen": [
+   24,
+   52
+  ],
+  "margenAvg": 36,
+  "crecAvg": 7,
+  "cajaAvg": 2.6,
+  "cobAvg": 1.3,
+  "scoreAvg": 5.8,
+  "eenVab": 17.8,
+  "eenVabSector": "Actividades Administrativas",
+  "podGrowth": 4.7,
+  "podSector": "Actividades Administrativas",
+  "fuenteMargen": "Estimación Vgrow + ANDE PyME 2023"
+ },
+ "Comercio": {
+  "margen": [
+   14,
+   34
+  ],
+  "margenAvg": 24,
+  "crecAvg": 5,
+  "cajaAvg": 1.9,
+  "cobAvg": 1.2,
+  "scoreAvg": 5.9,
+  "eenVab": 49.8,
+  "eenVabSector": "Comercio",
+  "podGrowth": 2.1,
+  "podSector": "Comercio",
+  "fuenteMargen": "Estimación Vgrow"
+ },
+ "Logística y Transporte": {
+  "margen": [
+   15,
+   30
+  ],
+  "margenAvg": 21,
+  "crecAvg": 7,
+  "cajaAvg": 2.1,
+  "cobAvg": 1.2,
+  "scoreAvg": 5.5,
+  "eenVab": 33.5,
+  "eenVabSector": "Transporte y Almacenamiento",
+  "podGrowth": 2.1,
+  "podSector": "Transporte y Almacenamiento",
+  "fuenteMargen": "Estimación Vgrow"
+ },
+ "Industria": {
+  "margen": [
+   12,
+   30
+  ],
+  "margenAvg": 20,
+  "crecAvg": 4,
+  "cajaAvg": 2,
+  "cobAvg": 1.1,
+  "scoreAvg": 5.1,
+  "eenVab": 36.7,
+  "eenVabSector": "Industria",
+  "podGrowth": 1.1,
+  "podSector": "Industria",
+  "fuenteMargen": "Estimación Vgrow"
+ },
+ "Finanzas y Seguros": {
+  "margen": [
+   30,
+   60
+  ],
+  "margenAvg": 42,
+  "crecAvg": 10,
+  "cajaAvg": 3.5,
+  "cobAvg": 1.6,
+  "scoreAvg": 8.2,
+  "eenVab": 50.7,
+  "eenVabSector": "Act. Servicios Financieros",
+  "podGrowth": -10,
+  "podSector": "Act. Servicios Financieros",
+  "fuenteMargen": "Estimación Vgrow + BCU"
+ },
+ "Salud": {
+  "margen": [
+   16,
+   38
+  ],
+  "margenAvg": 26,
+  "crecAvg": 9,
+  "cajaAvg": 2.3,
+  "cobAvg": 1.2,
+  "scoreAvg": 6.4,
+  "eenVab": 9.4,
+  "eenVabSector": "Salud",
+  "podGrowth": -1,
+  "podSector": "Salud",
+  "fuenteMargen": "Estimación Vgrow"
+ },
+ "Agro": {
+  "margen": [
+   12,
+   32
+  ],
+  "margenAvg": 22,
+  "crecAvg": 6,
+  "cajaAvg": 3,
+  "cobAvg": 1.2,
+  "scoreAvg": 4.8,
+  "eenVab": null,
+  "eenVabSector": null,
+  "podGrowth": null,
+  "podSector": null,
+  "fuenteMargen": "Uruguay XXI Agro 2024"
+ },
+ "Construcción": {
+  "margen": [
+   8,
+   22
+  ],
+  "margenAvg": 14,
+  "crecAvg": 5,
+  "cajaAvg": 1.5,
+  "cobAvg": 1,
+  "scoreAvg": 5,
+  "eenVab": null,
+  "eenVabSector": null,
+  "podGrowth": null,
+  "podSector": null,
+  "fuenteMargen": "Uruguay XXI + estimación Vgrow"
+ },
+ "Otro": {
+  "margen": [
+   15,
+   45
+  ],
+  "margenAvg": 28,
+  "crecAvg": 7,
+  "cajaAvg": 2.2,
+  "cobAvg": 1.2,
+  "scoreAvg": 5.5,
+  "eenVab": null,
+  "eenVabSector": null,
+  "podGrowth": 4.4,
+  "podSector": "Otras",
+  "fuenteMargen": "Estimación Vgrow interna"
+ }
+}
