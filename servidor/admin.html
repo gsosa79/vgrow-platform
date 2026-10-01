@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Vgrow: administración</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens de DESIGN.md, sección 11 */
+:root{
+  --marino:#0F1E3C;--turquesa:#12B8C7;--turquesa-accion:#0B7C87;--turquesa-oscuro:#08646D;
+  --papel:#F6F7F9;--blanco:#FFFFFF;--borde:#E3E7EC;--tinta:#16202E;--gris:#5B6778;
+  --verde:#18864B;--verde-suave:#E8F5EE;--amarillo:#A36A00;--amarillo-suave:#FBF3E0;
+  --naranja:#C4531B;--naranja-suave:#FCEEE6;--rojo:#C93434;--rojo-suave:#FBEAEA;
+  --r-control:6px;--r-tarjeta:10px;--fuente:'IBM Plex Sans',-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--fuente);font-size:15px;line-height:1.55}
+.barra{background:var(--marino);color:var(--blanco);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.barra-tit{font-size:16px;font-weight:600}
+.barra-sub{font-size:12px;color:#9AA6B8}
+.barra a{color:var(--blanco);font-size:13px;font-weight:600;text-decoration:none;border:1px solid #3A4A66;border-radius:var(--r-control);padding:8px 12px;min-height:36px;display:inline-flex;align-items:center}
+.barra a:focus-visible,button:focus-visible,input:focus-visible,.fila:focus-visible{outline:2px solid var(--turquesa-accion);outline-offset:2px}
+.barra a:focus-visible{outline-color:var(--turquesa)}
+main{max-width:1280px;margin:0 auto;padding:24px}
+h1{font-size:28px;line-height:1.2;font-weight:700;margin:0 0 4px}
+h2{font-size:18px;line-height:1.3;font-weight:600;margin:0 0 4px}
+.sec{color:var(--gris);font-size:13px;line-height:1.45;margin:0 0 16px}
+.bloque{margin-bottom:32px}
+.tarjetas{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tarjeta{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r-tarjeta);padding:16px}
+.t-l{font-size:12px;font-weight:500;color:var(--gris);line-height:1.3}
+.t-v{font-size:28px;line-height:1.1;font-weight:600;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.t-c{font-size:13px;line-height:1.45;color:var(--gris)}
+.buscador{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.buscador label{font-size:12px;font-weight:500;color:var(--gris);display:block;margin-bottom:4px}
+.buscador input{width:min(420px,100%);font:inherit;font-size:15px;padding:10px 12px;border:1px solid #CBD5E1;border-radius:var(--r-control);background:var(--blanco);color:var(--tinta)}
+.buscador input:focus{border-color:var(--turquesa-accion);outline:none;box-shadow:0 0 0 3px rgba(11,124,135,.15)}
+.cuenta{font-size:13px;color:var(--gris)}
+.tabla{width:100%;border-collapse:collapse;background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r-tarjeta);overflow:hidden}
+.tabla th{font-size:12px;font-weight:500;color:var(--gris);text-align:left;padding:10px 12px;border-bottom:1px solid var(--borde);white-space:nowrap}
+.tabla td{padding:10px 12px;border-bottom:1px solid var(--borde);font-size:14px;vertical-align:top}
+.tabla tr:last-child td{border-bottom:none}
+.tabla .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fila{cursor:pointer}
+.fila:hover td{background:#F9FAFB}
+.link{background:none;border:none;padding:0;font:inherit;font-weight:600;color:var(--turquesa-accion);cursor:pointer;text-align:left}
+.link:hover{text-decoration:underline}
+.gris{color:var(--gris)}
+.chica{font-size:12px}
+.sem{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:var(--r-control);font-size:13px;font-weight:600;color:var(--tinta);white-space:nowrap}
+.sem i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.etiqueta{display:inline-block;padding:2px 8px;border-radius:var(--r-control);font-size:12px;font-weight:600;background:#EEF2F6;color:var(--tinta)}
+.volver{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:8px}
+.ficha{display:flex;flex-wrap:wrap;gap:8px 24px;margin:8px 0 16px;font-size:14px}
+.ficha b{font-weight:500;color:var(--gris);font-size:12px;display:block}
+.vacio,.error{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r-tarjeta);padding:16px;color:var(--gris)}
+.error{color:var(--rojo)}
+/* Celular: las tablas pasan a tarjetas (DESIGN.md §7) */
+@media(max-width:768px){
+  main{padding:16px}
+  h1{font-size:24px}
+  body{font-size:16px}
+  .tabla,.tabla tbody,.tabla tr,.tabla td{display:block;width:100%}
+  .tabla{border:none;background:none}
+  .tabla thead{display:none}
+  .tabla tr{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r-tarjeta);padding:12px 14px;margin-bottom:10px}
+  .tabla td{border:none;padding:2px 0;display:flex;justify-content:space-between;gap:12px}
+  .tabla td::before{content:attr(data-l);font-size:12px;font-weight:500;color:var(--gris);flex-shrink:0}
+  .tabla td.primera{display:block}
+  .tabla td.primera::before{content:none}
+  .tabla .r{text-align:right}
+  .link{min-height:32px}
+}
+</style>
+</head>
+<body>
+<header class="barra">
+  <div><div class="barra-tit">Administración de Vgrow</div><div class="barra-sub">Herramienta interna, solo lectura</div></div>
+  <a href="/">Volver a la plataforma</a>
+</header>
+<main id="app"><p class="gris">Cargando…</p></main>
+<script>
+(function(){
+  'use strict';
+  var app=document.getElementById('app');
+  var MESES=['ene.','feb.','mar.','abr.','may.','jun.','jul.','ago.','set.','oct.','nov.','dic.'];
+  var SIMBOLO={UYU:'$',USD:'US$',ARS:'AR$',CLP:'CLP$',PYG:'Gs.'};
+  var SEM={Verde:['var(--verde-suave)','var(--verde)'],Amarillo:['var(--amarillo-suave)','var(--amarillo)'],Naranja:['var(--naranja-suave)','var(--naranja)'],Rojo:['var(--rojo-suave)','var(--rojo)']};
+  var PLANES={freemium:'Free',basic:'Basic',pro:'Pro'};
+  var PLANES_IA={freemium:'Free',basic:'Basic',pro:'Pro',todos:'Briefing del mercado',sin_login:'Sin login'};
+
+  // Todo el texto que viene de la base entra como texto, nunca como HTML
+  function h(tag,attrs){var e=document.createElement(tag);attrs=attrs||{};for(var k in attrs){var v=attrs[k];if(v==null||v===false)continue;if(k==='class')e.className=v;else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?'':v);}
+    for(var i=2;i<arguments.length;i++)agregar(e,arguments[i]);return e;}
+  function agregar(e,c){if(c==null||c===false)return;if(Array.isArray(c)){c.forEach(function(x){agregar(e,x)});return;}e.appendChild(typeof c==='object'?c:document.createTextNode(String(c)));}
+  function num(n,dec){if(n==null||!isFinite(n))return'—';var x=Number(n),r=Math.abs(x).toFixed(dec||0).split('.');return(x<0&&Number(r.join('.'))!==0?'-':'')+r[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+(r[1]?','+r[1]:'');}
+  function monto(n,mon){return n==null?'—':(SIMBOLO[mon]||'$')+' '+num(Math.round(n));}
+  function fecha(f,conHora){if(!f)return'—';var d=new Date(f);if(isNaN(d))return'—';var t=d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear();return conHora?t+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'):t;}
+  function sem(s){if(!s)return h('span',{class:'gris'},'—');var c=SEM[s]||['#EEF2F6','var(--gris)'];return h('span',{class:'sem',style:'background:'+c[0]},h('i',{style:'background:'+c[1]}),s);}
+  function api(ruta){return fetch(ruta,{credentials:'same-origin',cache:'no-store'}).then(function(r){if(r.status===404)throw new Error('No encontrado. Volvé a entrar con tu cuenta de administrador.');if(!r.ok)throw new Error('No pudimos leer los datos. Probá de nuevo en un minuto.');return r.json();});}
+  function td(l,c,cls){return h('td',{'data-l':l,class:cls||null},c);}
+
+  // ── Métricas ──
+  function tarjeta(l,v,c){return h('div',{class:'tarjeta'},h('div',{class:'t-l'},l),h('div',{class:'t-v'},v),c?h('div',{class:'t-c'},c):null);}
+  function metricas(m){
+    var ini=m.diagnosticos_iniciados,fin=m.diagnosticos_terminados,sc=m.segunda_carga,em=m.email_mensual;
+    var pct=ini.personas?Math.round(fin.personas/ini.personas*100):null;
+    var planes=Object.keys(m.ia.por_plan).map(function(p){return (PLANES_IA[p]||p)+': '+num(m.ia.por_plan[p])}).join('. ');
+    return h('section',{class:'bloque','aria-labelledby':'t-met'},h('h2',{id:'t-met'},'Últimos 30 días'),h('p',{class:'sec'},'Personas distintas, salvo donde dice pedidos o emails.'),
+      h('div',{class:'tarjetas'},
+        tarjeta('Diagnósticos iniciados',num(ini.personas),num(ini.eventos)+' veces en total.'),
+        tarjeta('Diagnósticos terminados',num(fin.personas),pct==null?'Todavía no hay diagnósticos iniciados.':pct+' % de los que empezaron.'),
+        tarjeta('Cuentas creadas',num(m.cuentas_creadas)),
+        tarjeta('Segunda carga dentro de 30 días',sc.porcentaje==null?'Sin datos':sc.porcentaje+' %',(sc.porcentaje==null?'Todavía no hay empresas con 30 días o más. ':num(sc.con_segunda)+' de '+num(sc.cohorte)+' empresas. ')+num(sc.empresas_en_curso)+' todavía dentro de sus primeros 30 días.'),
+        tarjeta('Uso de la IA',num(m.ia.pedidos)+' pedidos',planes?planes+'.':'Todavía no hay pedidos.'),
+        tarjeta('Pedidos de "Avisame"',num(m.avisame.pedidos),m.avisame.pedidos?'De los planes pagos, en las pantallas con candado.':'Todavía no hay pedidos.'),
+        tarjeta('Emails mensuales enviados',num(em.enviados),num(em.clics)+' clics en el botón. '+num(em.actualizaron_despues)+' actualizaron después.')));
+  }
+
+  // ── Empresas ──
+  var estado={q:'',datos:null,timer:null};
+  function listaEmpresas(){
+    var cont=h('div',{id:'lista'});
+    var input=h('input',{id:'buscar',type:'search',placeholder:'Nombre o email',autocomplete:'off',value:estado.q,oninput:function(e){estado.q=e.target.value;clearTimeout(estado.timer);estado.timer=setTimeout(function(){cargarEmpresas(cont)},250);}});
+    var sec=h('section',{class:'bloque','aria-labelledby':'t-emp'},h('h2',{id:'t-emp'},'Empresas'),h('p',{class:'sec'},'Ordenadas por la actividad más reciente. Tocá una para ver sus diagnósticos y su plan.'),
+      h('div',{class:'buscador'},h('div',null,h('label',{for:'buscar'},'Buscar'),input)),cont);
+    cargarEmpresas(cont);return sec;
+  }
+  function cargarEmpresas(cont){
+    api('/api/admin/empresas?q='+encodeURIComponent(estado.q)).then(function(d){
+      cont.textContent='';
+      cont.appendChild(h('p',{class:'cuenta'},estado.q?num(d.empresas.length)+' de '+num(d.total)+' empresas':num(d.total)+' empresas'+(d.total>d.empresas.length?' (se muestran las '+num(d.empresas.length)+' más recientes)':'')));
+      if(!d.empresas.length){cont.appendChild(h('div',{class:'vacio'},estado.q?'Ninguna empresa coincide con "'+estado.q+'".':'Todavía no hay empresas.'));return;}
+      cont.appendChild(h('table',{class:'tabla'},
+        h('thead',null,h('tr',null,['Empresa','Email','Rubro','País','Score','Semáforo','Diagnósticos','Última actividad'].map(function(t,i){return h('th',{class:i===4||i===6?'r':null},t)}))),
+        h('tbody',null,d.empresas.map(function(e){
+          var abrir=function(){location.hash='empresa-'+e.id;};
+          return h('tr',{class:'fila',onclick:abrir},
+            td('Empresa',[h('button',{class:'link',type:'button',onclick:function(ev){ev.stopPropagation();abrir();}},e.nombre||'Sin nombre'),e.con_cuenta?null:h('div',{class:'gris chica'},'Sin cuenta')],'primera'),
+            td('Email',e.email||'—'),td('Rubro',e.sector||'—'),td('País',e.pais||'—'),
+            td('Score',e.score==null?'—':num(e.score,1),'r'),td('Semáforo',sem(e.semaforo)),
+            td('Diagnósticos',num(e.diagnosticos),'r'),td('Última actividad',fecha(e.ultima_actividad,true)));
+        }))));
+    }).catch(function(err){cont.textContent='';cont.appendChild(h('div',{class:'error',role:'alert'},err.message));});
+  }
+
+  // ── Detalle de una empresa ──
+  function detalle(id){
+    app.textContent='';app.appendChild(h('p',{class:'gris'},'Cargando…'));
+    api('/api/admin/empresas/'+encodeURIComponent(id)).then(function(d){
+      var e=d.empresa,mon=e.moneda;app.textContent='';
+      app.appendChild(h('button',{class:'link volver',type:'button',onclick:function(){location.hash='';}},'← Volver a las empresas'));
+      app.appendChild(h('h1',null,e.nombre||'Sin nombre'));
+      app.appendChild(h('div',{class:'ficha'},
+        h('div',null,h('b',null,'Plan'),h('span',{class:'etiqueta'},PLANES[d.plan]||d.plan)),
+        h('div',null,h('b',null,'Email'),e.email||'—'),
+        h('div',null,h('b',null,'Rubro y país'),(e.sector||'—')+(e.pais?' en '+e.pais:'')),
+        h('div',null,h('b',null,'Tamaño'),e.tamano||'—'),
+        h('div',null,h('b',null,'Score actual'),e.score==null?'—':num(e.score,1)+' de 10 ',e.semaforo?sem(e.semaforo):null),
+        h('div',null,h('b',null,'Registrada'),fecha(e.creado))));
+      if(d.usuarios.length)app.appendChild(h('p',{class:'sec'},'Con acceso: '+d.usuarios.map(function(u){return u.email+' ('+(u.rol==='contador'?'contador':'dueño')+(u.email_mensual?', recibe el email mensual':'')+')'}).join('; ')+'.'));
+      else app.appendChild(h('p',{class:'sec'},'Sin cuenta: llegó por el registro de la plataforma antes del login.'));
+      app.appendChild(h('h2',null,'Diagnósticos ('+num(d.diagnosticos.length)+')'));
+      if(!d.diagnosticos.length){app.appendChild(h('div',{class:'vacio'},'Esta empresa todavía no tiene diagnósticos guardados.'));return;}
+      app.appendChild(h('table',{class:'tabla',style:'margin-top:12px'},
+        h('thead',null,h('tr',null,['Fecha','Ventas','Margen','Estructura','Caja','Score','Riesgo principal','Acción'].map(function(t,i){return h('th',{class:i>=1&&i<=5?'r':null},t)}))),
+        h('tbody',null,d.diagnosticos.map(function(x){
+          return h('tr',null,td('Fecha',fecha(x.fecha,true),'primera'),td('Ventas',monto(x.ventas,mon),'r'),td('Margen',x.margen==null?'—':num(x.margen,x.margen%1?1:0)+' %','r'),
+            td('Estructura',monto(x.estructura,mon),'r'),td('Caja',monto(x.caja,mon),'r'),td('Score',[x.score==null?'—':num(x.score,1)+' ',x.semaforo?sem(x.semaforo):null],'r'),
+            td('Riesgo principal',x.riesgo||'—'),td('Acción',x.accion||'—'));
+        }))));
+    }).catch(function(err){app.textContent='';app.appendChild(h('button',{class:'link volver',type:'button',onclick:function(){location.hash='';}},'← Volver a las empresas'));app.appendChild(h('div',{class:'error',role:'alert'},err.message));});
+  }
+
+  // ── Inicio y navegación (el botón atrás vuelve de una empresa a la lista) ──
+  function inicio(){
+    app.textContent='';app.appendChild(h('h1',null,'Administración'));app.appendChild(h('p',{class:'sec'},'Empresas, diagnósticos y métricas. Nada de lo que hay acá se puede modificar.'));
+    var met=h('div',null,h('p',{class:'gris'},'Cargando métricas…'));app.appendChild(met);app.appendChild(listaEmpresas());
+    api('/api/admin/resumen').then(function(m){met.textContent='';met.appendChild(metricas(m));}).catch(function(err){met.textContent='';met.appendChild(h('div',{class:'error bloque',role:'alert'},err.message));});
+  }
+  function ruta(){var m=/^#empresa-(\d+)$/.exec(location.hash);window.scrollTo(0,0);if(m)detalle(m[1]);else inicio();}
+  window.addEventListener('hashchange',ruta);ruta();
+})();
+</script>
+</body>
+</html>

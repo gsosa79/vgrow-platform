@@ -9,6 +9,7 @@ Servidor Node.js + Express para vgrowapp.com.
 - `deploy/metricas.sh` — embudo, empresas activadas, segunda carga, IA por día y plan, y "Avisame" por plan y módulo (`bash deploy/metricas.sh 30` para los últimos 30 días)
 - `deploy/migrar.sh` — crea las tablas nuevas y agrega las columnas que faltan (se puede repetir)
 - `deploy/plan.sh <email> <freemium|basic|pro> [id de la empresa]` — cambia a mano el plan de una empresa, mientras no haya pagos integrados
+- `/admin` — administración de solo lectura (métricas de 30 días, empresas con buscador, diagnósticos y plan de cada una). Solo con sesión de un email de `ADMIN_EMAILS`; cualquier otro ve "No encontrado". Con el login apagado muestra "Disponible cuando se active el login".
 - `deploy/retorno.sh` — revisa ahora a quién le toca el email mensual y se lo manda (la app ya lo hace sola una vez por día)
 - `servidor/` — login y sesión, cuentas, planes, IA con cuota, comparaciones agregadas, métricas y envío de emails
 
