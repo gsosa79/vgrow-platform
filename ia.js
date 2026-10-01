@@ -43,6 +43,10 @@ function riesgoTxt(r, a) {
 
 class DatoInvalido extends Error {}
 
+// Topes de presentación (los mismos que muestra la plataforma): con datos extremos, la IA no recibe números absurdos
+const txtCaja = m => (m > 24 ? 'más de 24' : m);
+const txtCob = c => (c > 10 ? 'más de 10' : c);
+
 // Lectores estrictos: si el dato no cumple, se rechaza el pedido entero.
 function num(d, k, min, max, opcional = false) {
   const v = d[k];
@@ -68,7 +72,9 @@ function soloEstasClaves(d, claves) {
   const sobran = Object.keys(d).filter(k => !claves.includes(k));
   if (sobran.length) throw new DatoInvalido(`Datos no permitidos: ${sobran.join(', ')}.`);
 }
-const monto = (n, m) => (MONEDAS[m] || '$') + ' ' + Math.round(n);
+// Montos con separador de miles, como en la plataforma (así la IA los repite bien: $ 2.700.000)
+const miles = n => { const x = Math.round(n); return (x < 0 ? '-' : '') + String(Math.abs(x)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
+const monto = (n, m) => (MONEDAS[m] || '$') + ' ' + miles(n);
 const pesos = n => monto(n, 'UYU');
 
 const ESTILO = 'Escribí en español rioplatense, con vos. Directo, sin títulos, sin firma ni atribución al final.';
@@ -84,8 +90,8 @@ const TIPOS = {
       const x = {
         sector: lista(d, 'sector', SECTORES), pais: lista(d, 'pais', PAISES), tamano: lista(d, 'tamano', TAMANOS, true),
         ventas: num(d, 'ventas', 0, 1e11), margen: num(d, 'margen', -100, 100), costos: num(d, 'costos', 0, 1e11),
-        crecimiento: num(d, 'crecimiento', -100, 1000, true), meses_caja: num(d, 'meses_caja', -1000, 1000),
-        cobertura: num(d, 'cobertura', -1000, 1000), score: num(d, 'score', 0, 10), score_eco: num(d, 'score_eco', 0, 5),
+        crecimiento: num(d, 'crecimiento', -100, 1000, true), meses_caja: num(d, 'meses_caja', -1000, 1e9),
+        cobertura: num(d, 'cobertura', -1000, 1e9), score: num(d, 'score', 0, 10), score_eco: num(d, 'score_eco', 0, 5),
         score_gestion: num(d, 'score_gestion', 0, 5), clientes: lista(d, 'clientes', CLIENTES, true),
         cobro: lista(d, 'cobro', COBRO, true), modelo: lista(d, 'modelo', MODELO, true),
         deudores: num(d, 'deudores', 0, 1e11, true), cuota_deuda: num(d, 'cuota_deuda', 0, 1e11, true),
@@ -100,7 +106,7 @@ const TIPOS = {
         `Sector: ${x.sector}, País: ${x.pais}` + (x.tamano ? `, Tamaño: ${x.tamano}` : ''),
         `Ventas: ${$(x.ventas)}/mes | Margen de contribución: ${x.margen}% | Estructura (costos fijos): ${$(x.costos)}/mes`,
         `Resultado: ${$(resultado)}/mes`,
-        `Meses de caja: ${x.meses_caja} | Cobertura: ${x.cobertura}x | Crecimiento: ${x.crecimiento ?? 0}%`,
+        `Meses de caja: ${txtCaja(x.meses_caja)} | Cobertura: ${txtCob(x.cobertura)}x | Crecimiento: ${x.crecimiento ?? 0}%`,
         `Score: ${x.score}/10 (económico ${x.score_eco} | gestión ${x.score_gestion})`,
         `Clientes: ${x.clientes || 'sin dato'} | Plazo de cobro que declaró: ${x.cobro ? PLAZO_TXT[x.cobro] : 'sin dato'} | Modelo: ${x.modelo || 'sin dato'}`,
         `Pago a proveedores: ${x.pago_prov ? PLAZO_TXT[x.pago_prov] : 'sin dato'}`,
@@ -138,15 +144,15 @@ const TIPOS = {
       if (!Array.isArray(d.historial) || d.historial.length < 2 || d.historial.length > 24) throw new DatoInvalido('historial inválido.');
       const hist = d.historial.map(h => {
         soloEstasClaves(h, ['score', 'cobertura', 'meses_caja']);
-        return `score ${num(h, 'score', 0, 10)} cobertura ${num(h, 'cobertura', -1000, 1000)}x caja ${num(h, 'meses_caja', -1000, 1000)} meses`;
+        return `score ${num(h, 'score', 0, 10)} cobertura ${txtCob(num(h, 'cobertura', -1000, 1e9))}x caja ${txtCaja(num(h, 'meses_caja', -1000, 1e9))} meses`;
       });
       const x = { sector: lista(d, 'sector', SECTORES), pais: lista(d, 'pais', PAISES), score: num(d, 'score', 0, 10),
-        cobertura: num(d, 'cobertura', -1000, 1000), meses_caja: num(d, 'meses_caja', -1000, 1000),
+        cobertura: num(d, 'cobertura', -1000, 1e9), meses_caja: num(d, 'meses_caja', -1000, 1e9),
         riesgo: lista(d, 'riesgo', Object.keys(RIESGOS), true), accion: lista(d, 'accion', Object.keys(ACCIONES), true) };
       return 'Sos un sistema de alerta temprana financiera para PyMEs. Detectaste un patrón de riesgo.\n\n' +
         `Historial (${hist.length} diagnósticos, del más viejo al más nuevo): ${hist.join(' | ')}\n` +
         `Patrón detectado: ${patron} — ${PATRONES[patron]}\n` +
-        `Empresa: ${x.sector}, ${x.pais}, score actual ${x.score}/10, cobertura ${x.cobertura}x, caja ${x.meses_caja} meses.` +
+        `Empresa: ${x.sector}, ${x.pais}, score actual ${x.score}/10, cobertura ${txtCob(x.cobertura)}x, caja ${txtCaja(x.meses_caja)} meses.` +
         riesgoTxt(x.riesgo, x.accion) + '\n\n' +
         'Escribí UNA alerta directa, máximo 60 palabras:\n- Qué cambió entre los diagnósticos (con los números del historial)\n' +
         '- Por qué importa ahora\n- ' + (x.accion ? 'Recordá la acción prioritaria ya definida' : 'Qué acción tomar esta semana') + '\n\n' +
@@ -162,13 +168,13 @@ const TIPOS = {
       const x = { salud: num(d, 'indice_salud', 0, 10), crec: num(d, 'indice_crecimiento', 0, 10), riesgo: num(d, 'indice_riesgo', 0, 10),
         sector: lista(d, 'sector', SECTORES, true), score_sector: num(d, 'score_sector', 0, 10, true),
         score: num(d, 'score', 0, 10, true), estado: lista(d, 'estado', ESTADOS, true),
-        cobertura: num(d, 'cobertura', -1000, 1000, true), meses_caja: num(d, 'meses_caja', -1000, 1000, true),
+        cobertura: num(d, 'cobertura', -1000, 1e9, true), meses_caja: num(d, 'meses_caja', -1000, 1e9, true),
         riesgo: lista(d, 'riesgo', Object.keys(RIESGOS), true) };
       const tieneEmpresa = x.score !== null;
       const ctx = `Índices de los datos de referencia: salud ${x.salud}/10, crecimiento ${x.crec}/10, riesgo ${x.riesgo}/10. ` +
         (x.sector ? `Sector del usuario: ${x.sector}` + (x.score_sector !== null ? ` (score promedio de referencia ${x.score_sector}/10). ` : '. ') : '') +
         (tieneEmpresa ? `Empresa del usuario: score ${x.score}/10` + (x.estado ? `, ${x.estado}` : '') +
-          (x.cobertura !== null ? `, cobertura ${x.cobertura}x` : '') + (x.meses_caja !== null ? `, caja ${x.meses_caja} meses` : '') + '.' :
+          (x.cobertura !== null ? `, cobertura ${txtCob(x.cobertura)}x` : '') + (x.meses_caja !== null ? `, caja ${txtCaja(x.meses_caja)} meses` : '') + '.' :
           'El usuario todavía no hizo el diagnóstico.');
       return 'Sos el sistema de inteligencia económica de Vgrow. Generá un briefing breve para el tablero de un empresario PyME.\n\n' +
         ctx + '\n\nEscribí 2 párrafos cortos:\n1. Qué muestran los índices de los datos de referencia (no los presentes como datos oficiales ni en tiempo real).\n2. ' +
@@ -185,7 +191,7 @@ const TIPOS = {
       'ventas_actual', 'margen_actual', 'costos_actual', 'resultado_actual', 'sector', 'pais', 'score', 'crecimiento', 'objetivo', 'riesgo', 'moneda'],
     armar(d) {
       const x = { v: num(d, 'ventas', 0, 1e11), m: num(d, 'margen', -100, 100), c: num(d, 'costos', 0, 1e11),
-        res: num(d, 'resultado', -1e11, 1e11), caja: num(d, 'caja_proyectada', -1e12, 1e12), cob: num(d, 'cobertura', -1000, 1000),
+        res: num(d, 'resultado', -1e11, 1e11), caja: num(d, 'caja_proyectada', -1e12, 1e12), cob: num(d, 'cobertura', -1000, 1e9),
         inv: num(d, 'inversion', 0, 1e11, true), fin: num(d, 'financiamiento', 0, 1e11, true),
         va: num(d, 'ventas_actual', 0, 1e11, true), ma: num(d, 'margen_actual', -100, 100, true), ca: num(d, 'costos_actual', 0, 1e11, true),
         ra: num(d, 'resultado_actual', -1e11, 1e11, true), sector: lista(d, 'sector', SECTORES, true), pais: lista(d, 'pais', PAISES, true),
@@ -193,7 +199,7 @@ const TIPOS = {
         riesgo: lista(d, 'riesgo', Object.keys(RIESGOS), true), moneda: lista(d, 'moneda', Object.keys(MONEDAS), true) || 'UYU' };
       const pesos = n => monto(n, x.moneda);
       const ctx = `Plan proyectado: ventas ${pesos(x.v)}/mes, margen de contribución ${x.m}%, estructura ${pesos(x.c)}/mes. ` +
-        `Resultado proyectado: ${pesos(x.res)}/mes. Caja proyectada: ${pesos(x.caja)}. Cobertura: ${x.cob}x.` +
+        `Resultado proyectado: ${pesos(x.res)}/mes. Caja proyectada: ${pesos(x.caja)}. Cobertura: ${txtCob(x.cob)}x.` +
         (x.inv ? ` Inversión: ${pesos(x.inv)}, financiamiento: ${pesos(x.fin || 0)}.` : '') +
         (x.va !== null ? ` Situación actual: ventas ${pesos(x.va)}/mes, margen ${x.ma}%, costos ${pesos(x.ca || 0)}/mes, resultado ${pesos(x.ra || 0)}/mes.` : '') +
         (x.sector ? ` Sector: ${x.sector}` + (x.pais ? `, país: ${x.pais}` : '') + (x.score !== null ? `, score actual ${x.score}/10.` : '.') : '') +
