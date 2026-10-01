@@ -8,7 +8,8 @@
 //   POST /api/comparar   → comparaciones para un perfil (grupos de 5 empresas o más)
 //   GET  /api/benchmark  → benchmark por sector, país y tamaño (plan Basic cuando el login está prendido)
 //   GET  /api/benchmarks → referencias por sector desde MySQL
-//   Con LOGIN_HABILITADO: /api/auth/* (link mágico), /entrar, /api/cuenta, /api/empresas/*, /api/evento, /api/metricas (administrador)
+//   Con LOGIN_HABILITADO: /api/auth/* (link mágico), /entrar, /api/cuenta, /api/empresas/*, /api/evento, /api/metricas (administrador),
+//   y el email mensual de retorno: /email/ir (botón del email) y /baja (baja de un clic). Ver servidor/retorno.js.
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
@@ -22,6 +23,7 @@ const iaServ = require('./servidor/ia-servicio');
 const comparar = require('./servidor/comparar');
 const { metricas } = require('./servidor/metricas');
 const { modeloPago, permisosDe } = require('./servidor/planes');
+const retorno = require('./servidor/retorno');
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
@@ -222,10 +224,12 @@ app.get('/api/cuenta', a(async (req, res) => {
 
 // Pedir el link mágico. Siempre responde lo mismo (no revela si el email tiene cuenta).
 app.post('/api/auth/pedir', soloConLogin, mismoSitio, limitador(10, 60 * 60 * 1000), a(async (req, res) => {
-  const email = String(cuerpo(req).email || '').trim().toLowerCase();
+  const b = cuerpo(req);
+  const email = String(b.email || '').trim().toLowerCase();
   if (!EMAIL_OK(email)) return res.status(400).json({ error: 'Ingresá un email válido.' });
   if (await cuentas.pedidosRecientes(email) < 5) {
-    const token = await cuentas.crearLinkIngreso(email, req.ip);
+    // acepta_emails: la casilla "mandame un email por mes" (solo se usa si con este link se crea la cuenta)
+    const token = await cuentas.crearLinkIngreso(email, req.ip, typeof b.acepta_emails === 'boolean' ? b.acepta_emails : undefined);
     const link = `${baseUrl(req)}/entrar?t=${token}`;
     await enviarEmail({ para: email, asunto: 'Tu link para entrar a Vgrow',
       texto: `Hola:\n\nPara entrar a Vgrow, abrí este link:\n${link}\n\nVence en 15 minutos y sirve una sola vez. Si no lo pediste, ignorá este mensaje.\n\nVgrow`,
@@ -251,9 +255,10 @@ app.post('/api/auth/entrar', soloConLogin, a(async (req, res) => {
   res.set('Cache-Control', 'no-store');
   if (!mismoOrigen(req)) return res.status(403).send(pagina('Link inválido', '<h1>No pudimos confirmar el ingreso</h1><p>Abrí el link desde tu email.</p><a class="b" href="/">Ir a Vgrow</a>'));
   const t = String((req.body && req.body.t) || '');
-  const email = /^[A-Za-z0-9_-]{20,100}$/.test(t) ? await cuentas.usarLinkIngreso(t) : null;
+  const ingreso = /^[A-Za-z0-9_-]{20,100}$/.test(t) ? await cuentas.usarLinkIngreso(t) : null;
+  const email = ingreso && ingreso.email;
   if (!email) return res.status(400).send(pagina('Link vencido', '<h1>El link venció o ya se usó</h1><p>Los links sirven una vez y vencen a los 15 minutos. Pedí uno nuevo desde la plataforma.</p><a class="b" href="/">Ir a Vgrow</a>'));
-  const u = await cuentas.usuarioPorEmail(email);
+  const u = await cuentas.usuarioPorEmail(email, ingreso.acepta);
   const empresas = await cuentas.empresasDelUsuario(u.id);
   const token = await cuentas.crearSesion(u.id, empresas[0] ? empresas[0].id : null);
   if (u.nuevo) evento('creo_cuenta', email, req.ip, { usuario_id: u.id, empresa_id: empresas[0] && empresas[0].id });
@@ -297,7 +302,9 @@ app.get('/api/empresas/:id/ultimo', soloConLogin, conSesion, suEmpresa, a(async 
   const h = await cuentas.historial(req.empresa.id);
   const anterior = h.length > 1 ? h[h.length - 2] : null;
   res.json({ diagnostico: await cuentas.ultimoDiagnostico(req.empresa.id),
-    anterior: anterior ? { id: anterior.id, ts: anterior.ts, total: anterior.total, accion: anterior.accion } : null });
+    // El anterior trae sus números para que el Inicio muestre la variación (solo de esta empresa)
+    anterior: anterior ? { id: anterior.id, ts: anterior.ts, total: anterior.total, accion: anterior.accion,
+      ventas: anterior.ventas, costos: anterior.costos, margen: anterior.margen, caja: anterior.caja } : null });
 }));
 app.get('/api/empresas/:id/historial', soloConLogin, conSesion, suEmpresa, a(async (req, res) => {
   if (!permisosDe(req.planEmpresa).historial) return res.status(403).json({ error: 'El historial es parte del plan Basic.', plan: req.planEmpresa });
@@ -321,7 +328,7 @@ app.post('/api/empresas/:id/migrar', soloConLogin, mismoSitio, conSesion, suEmpr
 }));
 
 // Eventos del embudo que manda el navegador (anónimos: un identificador al azar, sin datos personales)
-const EVENTOS_CLIENTE = ['inicio_diagnostico', 'vio_resultado', 'volvio', 'segunda_carga'];
+const EVENTOS_CLIENTE = ['inicio_diagnostico', 'vio_resultado', 'volvio', 'segunda_carga', 'inicio_ver_por_que', 'inicio_simular'];
 app.post('/api/evento', limitador(120, 60 * 60 * 1000), a(async (req, res) => {
   const d = cuerpo(req);
   if (!EVENTOS_CLIENTE.includes(d.tipo)) return res.status(400).json({ error: 'Evento desconocido.' });
@@ -329,6 +336,24 @@ app.post('/api/evento', limitador(120, 60 * 60 * 1000), a(async (req, res) => {
   const s = loginHabilitado() ? await sesionDe(req) : null;
   if (db.conectar()) await evento(d.tipo, null, req.ip, { anon, empresa_id: s && s.empresa ? s.empresa.id : null });
   res.json({ ok: true });
+}));
+
+// ═══ Email mensual de retorno ═══════════════════════════════════════════════
+// Botón "Actualizar mis números": registra el clic y lleva al Inicio (?desde=email para que la página lo sepa)
+app.get('/email/ir', a(async (req, res) => {
+  res.set('Cache-Control', 'no-store'); res.set('Referrer-Policy', 'no-referrer');
+  if (loginHabilitado() && db.conectar()) {
+    const r = await retorno.registrarClic(req.query.t).catch(e => { console.error('[email clic]', e.message); return null; });
+    if (r) evento('email_clic', null, req.ip, { empresa_id: r.empresa_id, usuario_id: r.usuario_id, tipo: r.tipo });
+  }
+  res.redirect(302, '/?desde=email#inicio');
+}));
+// Baja de un clic (link al pie de cada email)
+app.get('/baja', a(async (req, res) => {
+  res.set('Cache-Control', 'no-store'); res.set('Referrer-Policy', 'no-referrer');
+  const ok = loginHabilitado() && db.conectar() ? await retorno.darDeBaja(req.query.t) : false;
+  if (!ok) return res.status(400).send(pagina('Link inválido', '<h1>No encontramos tu suscripción</h1><p>El link no es válido. Si querés dejar de recibir emails, escribinos a info@vgrow.com.uy.</p><a class="b" href="/">Ir a Vgrow</a>'));
+  res.send(pagina('Listo', '<h1>Listo, no te vamos a mandar más estos emails</h1><p>Ya no vas a recibir el email mensual para actualizar tus números. Tu cuenta y tus diagnósticos siguen igual.</p><a class="b" href="/">Ir a Vgrow</a>'));
 }));
 
 // Métricas: solo administrador (email en ADMIN_EMAILS con sesión) o, desde el servidor, con METRICAS_TOKEN
@@ -359,4 +384,8 @@ app.use('/api', (err, req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], maxAge: '5m' }));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-app.listen(PORT, '127.0.0.1', () => console.log(`Vgrow escuchando en http://127.0.0.1:${PORT}`));
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`Vgrow escuchando en http://127.0.0.1:${PORT}`);
+  // Proceso diario del email mensual (solo con cuentas y base de datos)
+  if (loginHabilitado() && db.conectar() && !['0', 'no', 'false'].includes(String(process.env.RETORNO_HABILITADO || '').toLowerCase())) retorno.iniciar();
+});

@@ -15,27 +15,31 @@ function pool() {
 }
 
 // ── Links mágicos ────────────────────────────────────────────────────────────
-async function crearLinkIngreso(email, ip) {
+// acepta: lo que marcó en "mandame un email por mes" (solo se usa si con este link se crea la cuenta)
+async function crearLinkIngreso(email, ip, acepta) {
   const token = nuevoToken();
-  await pool().query('INSERT INTO login_tokens (token_hash, email, vence, ip) VALUES (?,?, NOW() + INTERVAL 15 MINUTE, ?)', [hash(token), email, txt(ip, 64)]);
+  await pool().query('INSERT INTO login_tokens (token_hash, email, vence, ip, acepta_emails) VALUES (?,?, NOW() + INTERVAL 15 MINUTE, ?, ?)',
+    [hash(token), email, txt(ip, 64), acepta === undefined ? null : (acepta ? 1 : 0)]);
   return token;
 }
 async function pedidosRecientes(email) {
   const [[r]] = await pool().query('SELECT COUNT(*) AS n FROM login_tokens WHERE email=? AND creado > NOW() - INTERVAL 1 HOUR', [email]);
   return r.n;
 }
-// Consume el token (una sola vez, antes de que venza). Devuelve el email o null.
+// Consume el token (una sola vez, antes de que venza). Devuelve { email, acepta } o null.
 async function usarLinkIngreso(token) {
   const h = hash(token);
   const [r] = await pool().query('UPDATE login_tokens SET usado=NOW() WHERE token_hash=? AND usado IS NULL AND vence > NOW()', [h]);
   if (!r.affectedRows) return null;
-  const [[t]] = await pool().query('SELECT email FROM login_tokens WHERE token_hash=?', [h]);
-  return t ? t.email : null;
+  const [[t]] = await pool().query('SELECT email, acepta_emails FROM login_tokens WHERE token_hash=?', [h]);
+  return t ? { email: t.email, acepta: t.acepta_emails === null ? null : !!t.acepta_emails } : null;
 }
 
 // ── Usuario, organización, empresa y suscripción ─────────────────────────────
 // Primer ingreso: crea el usuario, su organización (rol dueño), una empresa y la suscripción Freemium.
-async function usuarioPorEmail(email) {
+// acepta: consentimiento para el email mensual (la casilla viene marcada; solo cuenta al crear la cuenta).
+// Solo un sí explícito lo prende: un link pedido sin la casilla (versión vieja de la página) queda en no.
+async function usuarioPorEmail(email, acepta) {
   const p = pool();
   const [[u]] = await p.query('SELECT id, email FROM usuarios WHERE email=?', [email]);
   if (u) {
@@ -45,7 +49,8 @@ async function usuarioPorEmail(email) {
   const conn = await p.getConnection();
   try {
     await conn.beginTransaction();
-    const [ru] = await conn.query("INSERT INTO usuarios (email, rol, verificado, ultimo_acceso) VALUES (?, 'dueno', 1, NOW())", [email]);
+    const [ru] = await conn.query("INSERT INTO usuarios (email, rol, verificado, ultimo_acceso, emails_mensuales, baja_token) VALUES (?, 'dueno', 1, NOW(), ?, ?)",
+      [email, acepta === true ? 1 : 0, nuevoToken()]);
     const [ro] = await conn.query('INSERT INTO organizaciones (nombre) VALUES (?)', [email.split('@')[1] || email]);
     await conn.query("INSERT INTO miembros (usuario_id, organizacion_id, rol) VALUES (?,?, 'dueno')", [ru.insertId, ro.insertId]);
     const [re] = await conn.query("INSERT INTO empresas (organizacion_id, nombre, email, origen) VALUES (?, 'Mi empresa', ?, 'cuenta')", [ro.insertId, email]);

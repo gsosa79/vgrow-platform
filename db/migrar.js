@@ -1,4 +1,4 @@
-// Agrega a las tablas que ya existían las columnas nuevas de identidad y arquitectura.
+// Agrega a las tablas que ya existían las columnas nuevas (identidad y arquitectura, email mensual).
 // Se corre con el usuario admin de la base (lo hace deploy/migrar.sh). Se puede repetir: solo agrega lo que falta.
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const fs = require('fs');
@@ -12,10 +12,15 @@ const COLUMNAS = [
   ['diagnosticos', 'riesgo', 'VARCHAR(20) NULL'],
   ['diagnosticos', 'accion_codigo', 'VARCHAR(40) NULL'],
   ['diagnosticos', 'origen', "VARCHAR(20) NULL"],
+  // Email mensual: consentimiento (se pide al crear la cuenta) y token del link de baja
+  ['usuarios', 'emails_mensuales', 'TINYINT(1) NOT NULL DEFAULT 0'],
+  ['usuarios', 'baja_token', 'VARCHAR(64) NULL'],
+  ['login_tokens', 'acepta_emails', 'TINYINT(1) NULL'],
 ];
 const INDICES = [
   ['empresas', 'ix_empresa_org', 'CREATE INDEX ix_empresa_org ON empresas (organizacion_id)'],
   ['diagnosticos', 'ix_diag_periodo', 'CREATE INDEX ix_diag_periodo ON diagnosticos (periodo_id)'],
+  ['usuarios', 'uq_baja_token', 'CREATE UNIQUE INDEX uq_baja_token ON usuarios (baja_token)'],
 ];
 
 (async () => {
