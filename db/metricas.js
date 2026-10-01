@@ -29,6 +29,12 @@ const num = (t, n) => String(t).padStart(n);
     console.log('\n"Avisame cuando esté disponible", por plan y módulo');
     if (!m.avisame_por_plan_y_modulo.length) console.log('  Todavía no hay pedidos.');
     for (const f of m.avisame_por_plan_y_modulo) console.log('  ' + col(f.plan === 'pro' ? 'Pro' : 'Basic', 7) + col(MODULOS[f.modulo] || f.modulo, 22) + num(f.pedidos, 5) + ' pedidos' + num(f.personas, 5) + ' personas');
+    const er = m.email_retorno;
+    console.log('\nEmail mensual de retorno');
+    console.log(`  Enviados: ${er.enviados} (${er.mensual.enviados} mensuales y ${er.recordatorio.enviados} recordatorios)`);
+    console.log(`  Clics en "Actualizar mis números": ${er.clics}`);
+    console.log(`  Actualizaron después del email: ${er.actualizaron_despues}`);
+    console.log(`  Usuarios que lo reciben: ${er.usuarios_que_lo_reciben} (no lo reciben: ${er.usuarios_que_no})`);
   } catch (e) {
     console.error('No se pudieron leer las métricas:', e.message);
     process.exitCode = 1;

@@ -248,3 +248,31 @@ CREATE TABLE IF NOT EXISTS ia_briefing (
   modelo  VARCHAR(60),
   creado  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ═══ Email mensual de retorno ═══════════════════════════════════════════════
+-- Un registro por email: nunca se manda dos veces el mismo (mismo diagnóstico, usuario y tipo).
+-- El clic del botón se registra con un token propio de cada email (se guarda solo el hash).
+CREATE TABLE IF NOT EXISTS emails_retorno (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  empresa_id      INT NOT NULL,
+  usuario_id      INT NOT NULL,
+  diagnostico_id  INT NOT NULL,
+  tipo            ENUM('mensual','recordatorio') NOT NULL,
+  token_hash      CHAR(64) NOT NULL,
+  enviado         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  clic            DATETIME NULL,
+  UNIQUE KEY uq_email_retorno (diagnostico_id, usuario_id, tipo),
+  UNIQUE KEY uq_email_token (token_hash),
+  KEY ix_email_enviado (enviado),
+  CONSTRAINT fk_ret_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id),
+  CONSTRAINT fk_ret_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_ret_diag FOREIGN KEY (diagnostico_id) REFERENCES diagnosticos(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Tareas que corren una vez por día (aunque la app se reinicie o haya más de una instancia)
+CREATE TABLE IF NOT EXISTS tareas_diarias (
+  nombre  VARCHAR(40) NOT NULL,
+  fecha   DATE NOT NULL,
+  creado  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (nombre, fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

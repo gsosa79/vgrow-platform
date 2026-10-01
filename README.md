@@ -7,7 +7,9 @@ Servidor Node.js + Express para vgrowapp.com.
 - `db/datos/` — dataset de referencia (35 empresas) y benchmarks por sector; se cargan en la base con `bash deploy/cargar-datos.sh` (se puede repetir sin duplicar)
 - `deploy/` — configuración de Nginx, instalación inicial y actualización automática
 - `deploy/metricas.sh` — embudo, empresas activadas, segunda carga, IA por día y plan, y "Avisame" por plan y módulo (`bash deploy/metricas.sh 30` para los últimos 30 días)
-- `deploy/migrar.sh` — crea las tablas de identidad y arquitectura y agrega las columnas nuevas (se puede repetir)
+- `deploy/migrar.sh` — crea las tablas nuevas y agrega las columnas que faltan (se puede repetir)
+- `deploy/plan.sh <email> <freemium|basic|pro> [id de la empresa]` — cambia a mano el plan de una empresa, mientras no haya pagos integrados
+- `deploy/retorno.sh` — revisa ahora a quién le toca el email mensual y se lo manda (la app ya lo hace sola una vez por día)
 - `servidor/` — login y sesión, cuentas, planes, IA con cuota, comparaciones agregadas, métricas y envío de emails
 
 Cualquier cambio que se suba a la rama `main` aparece en el sitio en menos de 5 minutos.
@@ -41,8 +43,20 @@ Variables del `.env`:
 | `ANTHROPIC_MODEL_PAGO` | modelo de los planes pagos (y de todo, con el login apagado) | `ANTHROPIC_MODEL` o `claude-sonnet-5` |
 | `ADMIN_EMAILS` | emails (separados por coma) que pueden ver `/api/metricas` y, con el login prendido, usar `?demo=1` | — |
 | `CUOTA_IA_FREE`, `CUOTA_IA_BASIC`, `CUOTA_IA_PRO` | análisis con IA por mes y por empresa según el plan | 3, 20 y 50 |
+| `RETORNO_HORA` | hora de Montevideo desde la que corre, una vez por día, la revisión del email mensual | `10` |
+| `RETORNO_HABILITADO` | `0` apaga el proceso diario del email mensual | prendido (si el login está prendido) |
 | `METRICAS_TOKEN` | clave para pedir `/api/metricas` desde el servidor (`Authorization: Bearer …`), 20 caracteres o más | — |
 
 Migrar la base: `bash deploy/migrar.sh`. Métricas: `bash deploy/metricas.sh`.
+
+### Email mensual de retorno (solo con cuenta)
+
+- Al crear la cuenta, el usuario ve una casilla marcada: "Si es una cuenta nueva, mandame un email por mes para actualizar mis números". Si la desmarca, no recibe nada. Las cuentas creadas antes de esto quedan sin el email, porque no lo aceptaron.
+- A los 30 días del último diagnóstico de la empresa le llega "Es momento de actualizar tus números". Incluye una línea con el riesgo principal y la acción guardados en ese diagnóstico, y un botón que lleva al Inicio.
+- Si a los 7 días la empresa no cargó un diagnóstico nuevo, le llega un solo recordatorio. Después no le llega nada más, hasta su próximo diagnóstico.
+- Cada email trae un link de baja de un clic.
+- La app revisa una vez por día a quién le toca. Cada email queda registrado en `emails_retorno` antes de mandarse, con una clave única por diagnóstico, usuario y tipo, así nunca sale dos veces el mismo.
+- Usa `enviarEmail()`: en modo de prueba, todo queda en el log y en `data/emails.log`.
+- `/api/metricas` (y `deploy/metricas.sh`) muestran los emails enviados, los clics en el botón y cuántos emails fueron seguidos de un diagnóstico nuevo de esa empresa.
 
 Datos de referencia: la página ya no trae el dataset. `/api/dataset` devuelve solo resultados agregados y ninguna comparación con menos de 5 empresas; con `?demo=1` devuelve el dataset completo para los módulos de demostración (con el login prendido, solo a administradores). Cuando un grupo no llega a 5 empresas, la pantalla lo dice en lugar de esconder la sección.

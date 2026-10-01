@@ -1,5 +1,5 @@
 #!/bin/bash
-# Métricas de la plataforma: embudo, empresas activadas, segunda carga, IA por día y plan, y "Avisame".
+# Métricas de la plataforma: embudo, empresas activadas, segunda carga, IA por día y plan, "Avisame" y email mensual.
 # Uso en el servidor:  bash deploy/metricas.sh        (últimos 30 días)
 #                      bash deploy/metricas.sh 7      (últimos 7 días)
 # También están en https://<tu dominio>/api/metricas para el administrador (ADMIN_EMAILS, con sesión).
