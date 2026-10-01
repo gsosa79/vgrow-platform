@@ -118,7 +118,7 @@ Los colores de semáforo están ajustados para pasar contraste AA **sobre blanco
 │          │ Título            fecha  [● Verde] 7,6/10  │
 │  Menú    │ Rubro en país                  [Mi empresa] │
 │  marino  ├────────────────────────────────────────────┤
-│  224 px  │  Título de página                           │
+│  248 px  │  Título de página                           │
 │          │  Una línea que explica para qué sirve       │
 │          │                                             │
 │          │  ┌── La respuesta ──────────────────────┐   │
@@ -128,7 +128,7 @@ Los colores de semáforo están ajustados para pasar contraste AA **sobre blanco
 └──────────┴────────────────────────────────────────────┘
 ```
 
-Ancho máximo del contenido: 1120 px, alineado a la izquierda.
+Ancho máximo del contenido: 1280 px, el mismo en todas las pantallas, centrado en el espacio a la derecha del menú. En pantallas más angostas el contenido ocupa todo el ancho disponible.
 
 La barra superior no muestra planes ni precios. El selector de plan y de vista (Empresario o Completo) aparece solo en el modo demo (`?demo=1`), que con el login prendido es solo para administradores.
 
@@ -163,6 +163,8 @@ Cada pantalla tiene su dirección, para poder compartirla, guardarla o volver co
 
 Una dirección que no existe, o de un módulo que no está disponible, lleva a Inicio. En el código se navega siempre con `goTo(id)`, que actualiza la dirección; nunca con `setPage` directo.
 
+**Próximo paso:** nunca se sugiere un módulo con candado para el plan del usuario. Si el que corresponde está bloqueado, se sugiere Simulación, que está abierta para todos.
+
 **Regla de oro de cada pantalla: la respuesta primero.** Lo primero que se ve contesta la pregunta de esa sección ("¿cómo está mi negocio?", "¿qué hago esta semana?"). Las explicaciones, tablas y ratios van después.
 
 En Mi empresa y en Diagnóstico, lo primero es `VgRespuesta`. Si la persona ya hizo un diagnóstico y entra a Diagnóstico, ve primero su último resultado y después el botón "Hacer un diagnóstico nuevo".
@@ -192,7 +194,7 @@ $ 225.000                      ← cifra, 28 px, tinta, tabular
 Vendés $ 75.000 por encima     ← contexto, 13 px, color de estado
 ```
 
-La cifra va en tinta. El color de estado solo en la línea de contexto o en una insignia. Nunca cifras en celeste claro sobre blanco.
+La cifra va en tinta. El color de estado solo en la línea de contexto o en una insignia. **El color sigue al dato:** un número negativo o malo (pérdida, caja corta, cobertura menor a 1) nunca va en verde ni en turquesa; va en el color del semáforo que le corresponde. Nunca cifras en celeste claro sobre blanco.
 
 ### Tablas
 
@@ -216,6 +218,8 @@ El texto no va en el color del semáforo: sobre su propio fondo suave da entre 4
 ### Menú inferior (celular)
 
 5 accesos: Inicio, Diagnóstico, Mi empresa, Mi semana, Planificación. Íconos de línea (no emojis), 24 px, texto 11 px. Activo: turquesa marca con rayita arriba.
+
+El menú lateral mide 248 px: así "Historial y alertas" e "Índices económicos" entran en una línea junto a la etiqueta del plan.
 
 Los ítems del menú lateral y del inferior son enlaces (`<a href="#mi-empresa">`) dentro de un `<nav>`: se recorren con Tab, se abren con Enter y muestran un contorno turquesa de 2 px al tener el foco. El activo lleva `aria-current="page"`.
 
