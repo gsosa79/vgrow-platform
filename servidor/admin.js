@@ -83,8 +83,12 @@ async function resumen(dias = 30) {
   const iaPlan = {};
   for (const f of m.ia_por_dia_y_plan) iaPlan[f.plan] = (iaPlan[f.plan] || 0) + f.pedidos;
   const avisos = m.avisame_por_plan_y_modulo.reduce((s, f) => s + Number(f.pedidos), 0);
+  const [[ay]] = await cuentas.pool().query(
+    `SELECT COUNT(*) AS veces, COUNT(DISTINCT COALESCE(JSON_UNQUOTE(JSON_EXTRACT(datos, '$.anon')), JSON_UNQUOTE(JSON_EXTRACT(datos, '$.empresa_id')), id)) AS personas
+       FROM eventos WHERE tipo = 'abrio_ayuda' AND creado >= NOW() - INTERVAL ? DAY`, [dias]);
   return {
     dias,
+    ayuda: { veces: Number(ay.veces), personas: Number(ay.personas) },
     diagnosticos_iniciados: paso('inicio_diagnostico'),
     diagnosticos_terminados: paso('vio_resultado'),
     cuentas_creadas: paso('creo_cuenta').eventos,
