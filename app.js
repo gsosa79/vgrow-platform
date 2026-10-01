@@ -329,7 +329,7 @@ app.post('/api/empresas/:id/migrar', soloConLogin, mismoSitio, conSesion, suEmpr
 }));
 
 // Eventos del embudo que manda el navegador (anónimos: un identificador al azar, sin datos personales)
-const EVENTOS_CLIENTE = ['inicio_diagnostico', 'vio_resultado', 'volvio', 'segunda_carga', 'inicio_ver_por_que', 'inicio_simular'];
+const EVENTOS_CLIENTE = ['inicio_diagnostico', 'vio_resultado', 'volvio', 'segunda_carga', 'inicio_ver_por_que', 'inicio_simular', 'abrio_ayuda'];
 app.post('/api/evento', limitador(120, 60 * 60 * 1000), a(async (req, res) => {
   const d = cuerpo(req);
   if (!EVENTOS_CLIENTE.includes(d.tipo)) return res.status(400).json({ error: 'Evento desconocido.' });
