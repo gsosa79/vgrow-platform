@@ -1,4 +1,4 @@
-# DESIGN.md · Vgrow Platform
+# DESIGN.md de Vgrow Platform
 
 Este archivo define cómo se ve y cómo habla Vgrow. Cualquier cambio de diseño, hecho por una persona o por Claude, tiene que seguirlo. Si algo de acá choca con lo que pide una tarea puntual, gana la tarea, pero después se actualiza este archivo.
 
@@ -20,7 +20,7 @@ Este archivo define cómo se ve y cómo habla Vgrow. Cualquier cambio de diseño
 
 Vgrow tiene una sola cosa que se tiene que recordar: **el score con su semáforo**. Es el "diagnóstico médico" del negocio.
 
-- Aparece grande una sola vez por pantalla (en Diagnóstico y en Mi empresa).
+- Aparece grande una sola vez por pantalla (en Diagnóstico y en Mi empresa), siempre con el componente `VgRespuesta` de `public/index.html`: anillo con el score, insignia del semáforo y la frase que contesta "¿cómo está mi negocio?".
 - Es el único lugar donde usamos color fuerte de estado a gran tamaño.
 - Es el único elemento con animación propia: el anillo se completa una vez cuando termina un diagnóstico. Nada más se anima solo.
 
@@ -115,10 +115,11 @@ Los colores de semáforo están ajustados para pasar contraste AA **sobre blanco
 
 ```
 ┌──────────┬────────────────────────────────────────────┐
-│          │ Barra superior: título · score · plan       │
-│  Menú    ├────────────────────────────────────────────┤
-│  marino  │  Título de página                           │
-│  232 px  │  Una línea que explica para qué sirve       │
+│          │ Título            fecha  [● Verde] 7,6/10  │
+│  Menú    │ Rubro en país                  [Mi empresa] │
+│  marino  ├────────────────────────────────────────────┤
+│  224 px  │  Título de página                           │
+│          │  Una línea que explica para qué sirve       │
 │          │                                             │
 │          │  ┌── La respuesta ──────────────────────┐   │
 │          │  │ Lo más importante de esta pantalla    │   │
@@ -129,22 +130,42 @@ Los colores de semáforo están ajustados para pasar contraste AA **sobre blanco
 
 Ancho máximo del contenido: 1120 px, alineado a la izquierda.
 
+La barra superior no muestra planes ni precios. El selector de plan y de vista (Empresario o Completo) aparece solo en el modo demo (`?demo=1`), que con el login prendido es solo para administradores.
+
 ### Celular (menos de 768 px)
 
 ```
 ┌──────────────────────────┐
-│ V  Título      [Modo]    │  ← barra marina, 2 líneas máximo
-│ [Plan: Free | $19 | $29] │
+│ V  Título                │  ← barra marina, 3 líneas máximo
+│ Rubro en país            │
+│ [● Verde] 7,6/10         │
 ├──────────────────────────┤
 │ La respuesta primero     │
 │ Detalle en una columna   │
 │ …                        │
 ├──────────────────────────┤
-│ ⌂   🔍   ▦   ✓   ▣       │  ← menú inferior, 5 accesos
+│  ⌂    ⌕    ▦    ☑    ▤   │  ← menú inferior: ícono y nombre
+│ Inicio … Planificación   │     (5 accesos, ver sección 7)
 └──────────────────────────┘
 ```
 
+### Direcciones y navegación
+
+Cada pantalla tiene su dirección, para poder compartirla, guardarla o volver con el botón "atrás" del celular o del navegador:
+
+| Pantalla | Dirección |
+|---|---|
+| Inicio | `vgrowapp.com/` o `#inicio` |
+| Diagnóstico | `#diagnostico` |
+| Mi empresa | `#mi-empresa` |
+| Mi semana | `#mi-semana` |
+| Las demás | `#` + su identificador (`#simulacion`, `#benchmark`, `#planificacion`…) |
+
+Una dirección que no existe, o de un módulo que no está disponible, lleva a Inicio. En el código se navega siempre con `goTo(id)`, que actualiza la dirección; nunca con `setPage` directo.
+
 **Regla de oro de cada pantalla: la respuesta primero.** Lo primero que se ve contesta la pregunta de esa sección ("¿cómo está mi negocio?", "¿qué hago esta semana?"). Las explicaciones, tablas y ratios van después.
+
+En Mi empresa y en Diagnóstico, lo primero es `VgRespuesta`. Si la persona ya hizo un diagnóstico y entra a Diagnóstico, ve primero su último resultado y después el botón "Hacer un diagnóstico nuevo".
 
 ---
 
@@ -195,6 +216,8 @@ El texto no va en el color del semáforo: sobre su propio fondo suave da entre 4
 ### Menú inferior (celular)
 
 5 accesos: Inicio, Diagnóstico, Mi empresa, Mi semana, Planificación. Íconos de línea (no emojis), 24 px, texto 11 px. Activo: turquesa marca con rayita arriba.
+
+Los ítems del menú lateral y del inferior son enlaces (`<a href="#mi-empresa">`) dentro de un `<nav>`: se recorren con Tab, se abren con Enter y muestran un contorno turquesa de 2 px al tener el foco. El activo lleva `aria-current="page"`.
 
 ### Íconos
 
@@ -258,7 +281,7 @@ El texto no va en el color del semáforo: sobre su propio fondo suave da entre 4
 
 ## 11. Tokens para el código
 
-Reemplazan a las variables actuales del `index.html`. La tabla de la derecha indica a qué variable vieja corresponde cada una, para migrar sin romper nada.
+Están definidos en el `:root` del CSS de `public/index.html`. Las variables viejas (`--bg`, `--text`, `--muted`, `--border`, `--green`, `--accion`, `--fd`…) siguen existiendo, pero apuntan a estos tokens; los comentarios indican cuál corresponde a cuál. **En código nuevo se usan solo los tokens**, también en los estilos en línea (`color:"var(--tinta)"`, `borderRadius:"var(--r-tarjeta)"`).
 
 ```css
 :root {
@@ -312,10 +335,4 @@ Al pedir un cambio de diseño, empezar así:
 
 > Leé DESIGN.md y seguilo al pie de la letra. Quiero [el cambio]. Antes de tocar código, decime qué vas a cambiar y cómo cumple con el DESIGN.md. Después aplicalo, revisalo en 390 px y 1366 px, y confirmame el checklist de la sección 12.
 
-**Orden sugerido para el rediseño**, de mayor a menor impacto:
-1. Tokens y tipografía (secciones 3, 4 y 11): cambia toda la plataforma de una vez.
-2. Sacar etiquetas en mayúsculas, flechas y puntos medios (secciones 4 y 7).
-3. Mi empresa y Diagnóstico: "la respuesta primero" con el semáforo como protagonista.
-4. Tablas en celular (máximo 3 columnas).
-5. Reemplazar emojis por íconos de línea.
-6. Revisión de textos con la sección 9.
+**Estado del rediseño:** ya están aplicados los tokens y la tipografía (secciones 3, 4 y 11), sin etiquetas en mayúsculas, flechas ni puntos medios (salvo nombre de plan y precio, como "Basic · US$ 19 por mes"), la respuesta primero en Mi empresa y Diagnóstico, las tablas de 3 columnas en celular, los íconos de línea, la revisión de textos (sección 9), las direcciones por pantalla y los menús con teclado. Lo que se agregue de ahora en más tiene que mantenerlo.

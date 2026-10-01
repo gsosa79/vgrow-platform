@@ -76,6 +76,11 @@ function datosCacheados(nombre, leer, clave) {
 // Dataset: solo resultados agregados. Con ?demo=1 se puede ver completo (los módulos de demostración lo usan).
 app.get('/api/dataset', a(async (req, res) => {
   if (req.query.demo === '1') {
+    // Con el login prendido, el dataset completo es solo para administradores
+    if (loginHabilitado()) {
+      const s = await sesionDe(req);
+      if (!s || !s.admin) return res.status(403).json({ error: 'El modo demo es solo para administradores.' });
+    }
     const todas = await comparar.dataset();
     res.set('Cache-Control', 'private, no-store');
     return res.json({ empresas: todas, total: todas.length });
@@ -99,7 +104,7 @@ app.get('/api/benchmark', a(async (req, res) => {
   if (loginHabilitado()) {
     const s = await sesionDe(req);
     if (!s) return res.status(401).json({ error: 'Iniciá sesión para ver el benchmark.', sinSesion: true });
-    if (!s.permisos.benchmark) return res.status(403).json({ error: 'El benchmark es parte del plan Basic.', plan: s.plan });
+    if (!s.permisos.benchmark && !s.admin) return res.status(403).json({ error: 'El benchmark es parte del plan Basic.', plan: s.plan });
   }
   const { sector, pais, tamano } = req.query;
   if (sector && !SECTORES_OK.includes(sector)) return res.status(400).json({ error: 'Rubro desconocido.' });
@@ -230,7 +235,7 @@ app.post('/api/auth/pedir', soloConLogin, mismoSitio, limitador(10, 60 * 60 * 10
 }));
 
 // El link del email abre esta página; el ingreso se confirma con un botón (así los antivirus que abren links no gastan el token).
-const pagina = (titulo, cuerpoHtml) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo} · Vgrow</title>
+const pagina = (titulo, cuerpoHtml) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vgrow: ${titulo.toLowerCase()}</title>
 <style>body{margin:0;background:#F5F6F8;font-family:'IBM Plex Sans',-apple-system,'Segoe UI',Roboto,sans-serif;color:#16202E}main{max-width:420px;margin:12vh auto;padding:0 16px}
 .c{background:#fff;border:1px solid #E3E7EC;border-radius:12px;padding:28px 24px}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{font-size:15px;line-height:1.55;color:#4A5B70;margin:0 0 20px}
 button,a.b{display:block;width:100%;min-height:44px;background:#0B7C87;color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;line-height:44px}</style></head>
