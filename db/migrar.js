@@ -42,6 +42,14 @@ const INDICES = [
       const [[x]] = await conn.query('SELECT COUNT(*) AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND INDEX_NAME=?', [bd, tabla, idx]);
       if (!x.n) { await conn.query(sql); console.log(`+ índice ${idx}`); }
     }
+    // Eventos del navegador guardados antes: sin IP, y sin el identificador del navegador cuando tienen empresa
+    // (ni claves vacías, que las métricas contaban como una misma persona). Los mismos tipos que EVENTOS_CLIENTE en app.js.
+    const CLIENTE = "tipo IN ('inicio_diagnostico','vio_resultado','volvio','segunda_carga','inicio_ver_por_que','inicio_simular','abrio_ayuda') AND email IS NULL";
+    const [ip] = await conn.query(`UPDATE eventos SET ip=NULL WHERE ${CLIENTE} AND ip IS NOT NULL`);
+    const [an] = await conn.query(`UPDATE eventos SET datos=JSON_REMOVE(datos, '$.anon') WHERE ${CLIENTE}
+      AND JSON_CONTAINS_PATH(datos, 'one', '$.anon') AND (JSON_TYPE(JSON_EXTRACT(datos, '$.anon'))='NULL' OR JSON_TYPE(JSON_EXTRACT(datos, '$.empresa_id'))='INTEGER')`);
+    await conn.query(`UPDATE eventos SET datos=JSON_REMOVE(datos, '$.empresa_id') WHERE ${CLIENTE} AND JSON_TYPE(JSON_EXTRACT(datos, '$.empresa_id'))='NULL'`);
+    if (ip.affectedRows || an.affectedRows) console.log(`Eventos del navegador: ${ip.affectedRows} sin IP, ${an.affectedRows} sin el identificador del navegador.`);
     console.log('Migración lista.');
   } catch (e) {
     console.error('No se pudo migrar:', e.message);
