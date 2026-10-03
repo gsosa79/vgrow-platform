@@ -276,3 +276,18 @@ CREATE TABLE IF NOT EXISTS tareas_diarias (
   creado  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (nombre, fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ═══ Registro de borrados y uniones ═════════════════════════════════════════
+-- Lo escriben deploy/borrar.sh y deploy/unir.sh: qué se hizo, cuándo y cuántos registros, sin los datos borrados.
+-- Del email queda solo su huella (SHA-256), para poder confirmar más adelante que ese email se borró.
+CREATE TABLE IF NOT EXISTS registro_borrados (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  accion      VARCHAR(20) NOT NULL,
+  email_hash  CHAR(64) NULL,
+  empresas    VARCHAR(200) NULL,
+  detalle     JSON,
+  hecho_por   VARCHAR(60) NULL,
+  creado      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_borrado_email (email_hash),
+  KEY ix_borrado_creado (creado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

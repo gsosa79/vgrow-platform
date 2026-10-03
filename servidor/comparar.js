@@ -1,5 +1,7 @@
 // Comparaciones con los datos de referencia, calculadas en el servidor.
 // El navegador recibe solo resultados agregados; ningún grupo con menos de MINIMO empresas.
+// Sale solo del dataset de referencia (dataset_empresas): las empresas que se registran en la plataforma no entran.
+// Si algún día entran, que cuente una sola por grupo de posibles duplicados (servidor/duplicados.js).
 const fs = require('fs');
 const path = require('path');
 const db = require('../db/db');

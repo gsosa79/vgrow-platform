@@ -58,6 +58,13 @@ h2{font-size:18px;line-height:1.3;font-weight:600;margin:0 0 4px}
 .ficha b{font-weight:500;color:var(--gris);font-size:12px;display:block}
 .vacio,.error{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r-tarjeta);padding:16px;color:var(--gris)}
 .error{color:var(--rojo)}
+.grupos{display:grid;gap:12px}
+.grupo{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r-tarjeta);padding:16px}
+.grupo .tabla{border:none;border-top:1px solid var(--borde);border-radius:0;margin:12px 0}
+.motivos{margin:0;padding-left:18px;font-size:14px}
+.motivos li{margin:2px 0}
+.cmd{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:var(--papel);border:1px solid var(--borde);border-radius:var(--r-control);padding:8px 10px;margin-top:6px;overflow-wrap:anywhere;user-select:all}
+.mas{margin-top:12px;min-height:44px;font:inherit;font-weight:600;color:var(--turquesa-accion);background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r-control);padding:0 16px;cursor:pointer}
 /* Celular: las tablas pasan a tarjetas (DESIGN.md §7) */
 @media(max-width:768px){
   main{padding:16px}
@@ -73,6 +80,8 @@ h2{font-size:18px;line-height:1.3;font-weight:600;margin:0 0 4px}
   .tabla td.primera::before{content:none}
   .tabla .r{text-align:right}
   .link{min-height:32px}
+  .grupo .tabla tr{border:none;border-bottom:1px solid var(--borde);border-radius:0;padding:10px 0;margin:0}
+  .grupo .tabla tr:last-child{border-bottom:none}
 }
 </style>
 </head>
@@ -148,6 +157,45 @@ h2{font-size:18px;line-height:1.3;font-weight:600;margin:0 0 4px}
     }).catch(function(err){cont.textContent='';cont.appendChild(h('div',{class:'error',role:'alert'},err.message));});
   }
 
+  // ── Posibles duplicados ──
+  var VISIBLES=10;
+  function duplicados(){
+    var cont=h('div',null,h('p',{class:'gris'},'Buscando posibles duplicados…'));
+    var sec=h('section',{class:'bloque','aria-labelledby':'t-dup'},h('h2',{id:'t-dup'},'Posibles duplicados'),
+      h('p',{class:'sec'},'Empresas que podrían ser la misma: nombres parecidos, el mismo email o el mismo dominio de email (sin contar gmail, hotmail, outlook y otros dominios públicos). Acá solo se marcan. Para unir dos, corré en el servidor el comando de cada grupo: la primera empresa queda y la otra se borra.'),cont);
+    api('/api/admin/duplicados').then(function(d){
+      cont.textContent='';
+      if(!d.grupos.length){cont.appendChild(h('div',{class:'vacio'},'No encontramos empresas que parezcan la misma.'));return;}
+      cont.appendChild(h('p',{class:'cuenta'},d.grupos.length===1?'1 grupo':num(d.grupos.length)+' grupos'));
+      var lista=h('div',{class:'grupos'});cont.appendChild(lista);
+      function mostrar(n){lista.textContent='';d.grupos.slice(0,n).forEach(function(g){lista.appendChild(grupo(g));});}
+      mostrar(VISIBLES);
+      if(d.grupos.length>VISIBLES){var b=h('button',{class:'mas',type:'button',onclick:function(){mostrar(d.grupos.length);b.remove();}},'Ver los '+num(d.grupos.length)+' grupos');cont.appendChild(b);}
+    }).catch(function(err){cont.textContent='';cont.appendChild(h('div',{class:'error',role:'alert'},err.message));});
+    return sec;
+  }
+  var FILAS=5;
+  function grupo(g,todas){
+    var corto=!todas&&g.empresas.length>FILAS;
+    var empresas=corto?g.empresas.slice(0,FILAS):g.empresas;
+    var caja=h('div',{class:'grupo'});
+    var ver=corto?h('button',{class:'mas',type:'button',onclick:function(){caja.replaceWith(grupo(g,true));}},'Ver las '+num(g.empresas.length)+' empresas y sus comandos'):null;
+    var sinCmd=g.sin_comando.length?h('div',{class:'chica gris',style:'margin-top:8px'},(g.sin_comando.length===1?'La empresa '+g.sin_comando[0]+' está en el grupo porque se parece a otra del grupo, no a la que queda':'Las empresas '+g.sin_comando.join(', ')+' están en el grupo porque se parecen a otras del grupo, no a la que queda')+': revisalas antes de unir.'):null;
+    agregar(caja,[
+      h('ul',{class:'motivos'},g.motivos.map(function(m){return h('li',null,m)}),g.mas_motivos?h('li',{class:'gris'},'Y '+num(g.mas_motivos)+' coincidencias más.'):null),
+      h('table',{class:'tabla'},
+        h('thead',null,h('tr',null,['Empresa','Email','Diagnósticos','Score','Última actividad'].map(function(t,i){return h('th',{class:i===2||i===3?'r':null},t)}))),
+        h('tbody',null,empresas.map(function(e){
+          return h('tr',null,
+            td('Empresa',[h('button',{class:'link',type:'button',onclick:function(){location.hash='empresa-'+e.id;}},(e.nombre||'Sin nombre')+' ('+e.id+')'),
+              h('div',{class:'gris chica'},(e.id===g.queda?'Queda. ':'')+(e.con_cuenta?'Con cuenta':'Sin cuenta'))],'primera'),
+            td('Email',e.email||'—'),td('Diagnósticos',num(e.diagnosticos),'r'),td('Score',e.score==null?'—':num(e.score,1),'r'),td('Última actividad',fecha(e.ultima_actividad,true)));
+        }))),
+      corto?ver:[g.comandos.length?h('div',{class:'chica gris'},g.comandos.length===1?'Para unirlas:':'Para unirlas, uno por uno:'):null,
+        g.comandos.map(function(c){return h('code',{class:'cmd'},c)}),sinCmd]]);
+    return caja;
+  }
+
   // ── Detalle de una empresa ──
   function detalle(id){
     app.textContent='';app.appendChild(h('p',{class:'gris'},'Cargando…'));
@@ -179,7 +227,7 @@ h2{font-size:18px;line-height:1.3;font-weight:600;margin:0 0 4px}
   // ── Inicio y navegación (el botón atrás vuelve de una empresa a la lista) ──
   function inicio(){
     app.textContent='';app.appendChild(h('h1',null,'Administración'));app.appendChild(h('p',{class:'sec'},'Empresas, diagnósticos y métricas. Nada de lo que hay acá se puede modificar.'));
-    var met=h('div',null,h('p',{class:'gris'},'Cargando métricas…'));app.appendChild(met);app.appendChild(listaEmpresas());
+    var met=h('div',null,h('p',{class:'gris'},'Cargando métricas…'));app.appendChild(met);app.appendChild(duplicados());app.appendChild(listaEmpresas());
     api('/api/admin/resumen').then(function(m){met.textContent='';met.appendChild(metricas(m));}).catch(function(err){met.textContent='';met.appendChild(h('div',{class:'error bloque',role:'alert'},err.message));});
   }
   function ruta(){var m=/^#empresa-(\d+)$/.exec(location.hash);window.scrollTo(0,0);if(m)detalle(m[1]);else inicio();}
