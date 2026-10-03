@@ -328,14 +328,17 @@ app.post('/api/empresas/:id/migrar', soloConLogin, mismoSitio, conSesion, suEmpr
   res.json({ ok: true, migrado: true, id: r.id });
 }));
 
-// Eventos del embudo que manda el navegador (anónimos: un identificador al azar, sin datos personales)
+// Eventos del embudo que manda el navegador. No guardan la IP ni ningún dato personal.
+// Sin sesión: solo un identificador al azar del navegador (anon). Con sesión: solo la empresa, nunca junto con el anon,
+// así los eventos anónimos de ese navegador no quedan atados a una empresa. (db/migrar.js limpia los que se guardaron antes.)
 const EVENTOS_CLIENTE = ['inicio_diagnostico', 'vio_resultado', 'volvio', 'segunda_carga', 'inicio_ver_por_que', 'inicio_simular', 'abrio_ayuda'];
 app.post('/api/evento', limitador(120, 60 * 60 * 1000), a(async (req, res) => {
   const d = cuerpo(req);
   if (!EVENTOS_CLIENTE.includes(d.tipo)) return res.status(400).json({ error: 'Evento desconocido.' });
   const anon = /^[a-z0-9-]{8,40}$/.test(String(d.anon || '')) ? d.anon : null;
   const s = loginHabilitado() ? await sesionDe(req) : null;
-  if (db.conectar()) await evento(d.tipo, null, req.ip, { anon, empresa_id: s && s.empresa ? s.empresa.id : null });
+  const datos = s && s.empresa ? { empresa_id: s.empresa.id } : anon ? { anon } : {};
+  if (db.conectar()) await evento(d.tipo, null, null, datos);
   res.json({ ok: true });
 }));
 
