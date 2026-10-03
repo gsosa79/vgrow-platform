@@ -10,7 +10,7 @@
 //   GET  /api/benchmarks → referencias por sector desde MySQL
 //   Con LOGIN_HABILITADO: /api/auth/* (link mágico), /entrar, /api/cuenta, /api/empresas/*, /api/evento, /api/metricas (administrador),
 //   y el email mensual de retorno: /email/ir (botón del email) y /baja (baja de un clic). Ver servidor/retorno.js.
-//   /admin y /api/admin/*: administración de solo lectura (ADMIN_EMAILS con sesión). Ver servidor/admin.js.
+//   /admin y /api/admin/*: administración de solo lectura (ADMIN_EMAILS con sesión). Ver servidor/admin.js y servidor/duplicados.js.
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
@@ -360,6 +360,7 @@ app.get('/baja', a(async (req, res) => {
 // ═══ Administración (solo lectura) ══════════════════════════════════════════
 // Solo con sesión de un email de ADMIN_EMAILS. A cualquier otro, la página y la API le responden "No encontrado".
 const admin = require('./servidor/admin');
+const duplicados = require('./servidor/duplicados');
 const soloAdmin = a(async (req, res, next) => {
   res.set('Cache-Control', 'no-store'); res.set('X-Robots-Tag', 'noindex, nofollow');
   const s = loginHabilitado() && db.conectar() ? await sesionDe(req) : null;
@@ -375,6 +376,7 @@ app.get(['/admin', '/admin/'], a(async (req, res) => {
 }));
 app.get('/api/admin/resumen', soloAdmin, a(async (req, res) => res.json(await admin.resumen(30))));
 app.get('/api/admin/empresas', soloAdmin, a(async (req, res) => res.json(await admin.listarEmpresas(req.query.q))));
+app.get('/api/admin/duplicados', soloAdmin, a(async (req, res) => res.json(await duplicados.posiblesDuplicados())));
 app.get('/api/admin/empresas/:id', soloAdmin, a(async (req, res) => {
   const d = await admin.detalleEmpresa(req.params.id);
   if (!d) return res.status(404).json({ error: 'No encontrado.' });

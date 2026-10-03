@@ -9,7 +9,9 @@ Servidor Node.js + Express para vgrowapp.com.
 - `deploy/metricas.sh` — embudo, empresas activadas, segunda carga, IA por día y plan, y "Avisame" por plan y módulo (`bash deploy/metricas.sh 30` para los últimos 30 días)
 - `deploy/migrar.sh` — crea las tablas nuevas y agrega las columnas que faltan (se puede repetir)
 - `deploy/plan.sh <email> <freemium|basic|pro> [id de la empresa]` — cambia a mano el plan de una empresa, mientras no haya pagos integrados
-- `/admin` — administración de solo lectura (métricas de 30 días, empresas con buscador, diagnósticos y plan de cada una). Solo con sesión de un email de `ADMIN_EMAILS`; cualquier otro ve "No encontrado". Con el login apagado muestra "Disponible cuando se active el login".
+- `deploy/borrar.sh <email>` — borra todo lo de una persona (usuario, empresas, diagnósticos, eventos y emails enviados), por ejemplo ante un pedido de privacidad. Muestra todo antes y pide escribir BORRAR; si la empresa la usan otras personas, pregunta si borrar solo al usuario o también la empresa. `--empresa <id>` borra una empresa puntual; `--registro [email]` muestra qué se borró y cuándo (tabla `registro_borrados`, sin los datos borrados)
+- `deploy/unir.sh <id_que_queda> <id_que_se_borra>` — une dos empresas que son la misma: pasa los usuarios y los diagnósticos a la que queda y borra la otra. Pide escribir UNIR
+- `/admin` — administración de solo lectura (métricas de 30 días, empresas con buscador, diagnósticos y plan de cada una, y posibles duplicados con el comando para unirlos). Solo con sesión de un email de `ADMIN_EMAILS`; cualquier otro ve "No encontrado". Con el login apagado muestra "Disponible cuando se active el login".
 - `deploy/retorno.sh` — revisa ahora a quién le toca el email mensual y se lo manda (la app ya lo hace sola una vez por día)
 - `servidor/` — login y sesión, cuentas, planes, IA con cuota, comparaciones agregadas, métricas y envío de emails
 
